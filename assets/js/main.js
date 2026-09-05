@@ -784,8 +784,7 @@ function renderStack() {
     return;
   }
 
-  $('stack-count').textContent =
-    `${items.length} ${plural(items.length, 'штука', 'штуки', 'штук')}`;
+  const thisYear = new Date().getFullYear();
 
   $('stack').innerHTML = items
     .map((s) => {
@@ -793,12 +792,15 @@ function renderStack() {
       const bars = [1, 2, 3]
         .map((i) => `<i class="${i <= lvl ? 'on' : ''}"></i>`)
         .join('');
+
+      // Первый год работы с языком считается за год, а не за ноль.
+      const years = s.since ? Math.max(1, thisYear - s.since) : null;
+      const stage = years ? `${years} ${plural(years, 'год', 'года', 'лет')}` : '';
+
       return `<li class="skill">
-        <span class="skill-top">
-          <span class="skill-name">${escapeHTML(s.name)}</span>
-          <span class="skill-bars" aria-label="уровень ${lvl} из 3">${bars}</span>
-        </span>
-        ${s.where ? `<span class="skill-where">${escapeHTML(s.where)}</span>` : ''}
+        <span class="skill-name">${escapeHTML(s.name)}</span>
+        <span class="skill-years">${stage}</span>
+        <span class="skill-bars" aria-label="уровень ${lvl} из 3">${bars}</span>
       </li>`;
     })
     .join('');

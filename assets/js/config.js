@@ -66,15 +66,15 @@ export const CONFIG = {
   ],
 
   // СТЕК. level: 3 основное, 2 уверенно, 1 по необходимости.
-  // where — где реально применял, это честнее абстрактных лет опыта.
+  // since — год, с которого работаешь с этим. Стаж считается сам,
+  // чтобы через год цифры не устарели.
   stack: [
-    { name: 'Flutter / Dart', level: 3, where: 'VPS Simple, Пульт' },
-    { name: 'Python',         level: 3, where: 'боты, автоматизация, парсеры' },
-    { name: 'Linux / VPS',    level: 3, where: 'свои серверы, почта, VPN' },
-    { name: 'Docker',         level: 2, where: 'Nextcloud, разное self-hosted' },
-    { name: 'Bash',           level: 2, where: 'деплой и обслуживание серверов' },
-    { name: 'Go',             level: 2, where: 'форки серверных проектов' },
-    { name: 'C++',            level: 1, where: 'моды для игр' },
+    { name: 'Python',         level: 3, since: 2021 },
+    { name: 'Flutter / Dart', level: 3, since: 2024 },
+    { name: 'Bash',           level: 2, since: 2022 },
+    { name: 'Docker',         level: 2, since: 2023 },
+    { name: 'C++',            level: 2, since: 2024 },
+    { name: 'Go',             level: 1, since: 2025 },
   ],
 
   memberSince: 'JUN 2025',
