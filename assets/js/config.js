@@ -42,15 +42,15 @@ export const CONFIG = {
   // href   — куда ведёт клик. Без href пункт копируется в буфер
   // note   — приписка справа: основной, второй, рабочий
   contacts: [
-    { group: 'написать', label: 'Telegram', value: '@villcreat', href: 'https://t.me/villcreat', note: 'основной' },
-    { group: 'написать', label: 'Telegram', value: '', href: '', note: 'второй' },
-    { group: 'написать', label: 'Discord', value: '', note: 'ник копируется' },
+    { group: 'написать', label: 'Telegram', value: '@villcreatgd', href: 'https://t.me/villcreatgd', note: 'основной' },
+    { group: 'написать', label: 'Telegram', value: '@NVSK2005', href: 'https://t.me/NVSK2005', note: 'второй' },
+    { group: 'написать', label: 'Discord', value: 'villcreat' },
     { group: 'написать', label: 'Почта', value: 'ttyuki97@gmail.com', href: 'mailto:ttyuki97@gmail.com' },
 
     { group: 'найти', label: 'GitHub', value: '@villcreat', href: 'https://github.com/villcreat' },
-    { group: 'найти', label: 'Steam', value: '', href: '', note: 'основной' },
-    { group: 'найти', label: 'Steam', value: '', href: '', note: 'второй' },
-    { group: 'найти', label: 'Spotify', value: '', href: '' },
+    { group: 'найти', label: 'Steam', value: 'rtx3090user', href: 'https://steamcommunity.com/id/rtx3090user', note: 'основной' },
+    { group: 'найти', label: 'Steam', value: 'villcreat', href: 'https://steamcommunity.com/id/villcreat', note: 'второй' },
+    { group: 'найти', label: 'Spotify', value: 'профиль', href: 'https://open.spotify.com/user/31uxknpuqbe2cao3wh724xnzypdu' },
   ],
 
   // Кольцо личных сайтов. Классика IndieWeb.
