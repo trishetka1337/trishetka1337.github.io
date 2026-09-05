@@ -4,3 +4,5 @@ blog.html
 feed.xml
 .claude/
 .DS_Store
+__pycache__/
+*.pyc
