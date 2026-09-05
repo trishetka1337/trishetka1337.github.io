@@ -536,6 +536,11 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 }
 .doing-item:first-child { color: var(--text); }
 
+/* Брошенное дело: зачёркнуто, но с припиской, чем кончилось. */
+.doing-item--done .doing-text { text-decoration: line-through; opacity: .5; }
+.doing-item--done::before { background: var(--text-3); box-shadow: none; }
+.doing-note { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+
 /* ---------- Стек ---------- */
 .stack { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
 .skill {

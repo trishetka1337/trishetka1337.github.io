@@ -809,7 +809,15 @@ function renderDoing() {
   $('now-updated').textContent = now.updated ? `обновлено ${agoDays(now.updated)}` : '';
 
   $('doing').innerHTML = now.lines
-    .map((line) => `<li class="doing-item">${escapeHTML(line)}</li>`)
+    .map((line) => {
+      // Строка может быть просто текстом или объектом с зачёркиванием.
+      const item = typeof line === 'string' ? { text: line } : line;
+      const cls = item.strike ? 'doing-item doing-item--done' : 'doing-item';
+      const note = item.note ? ` <span class="doing-note">(${escapeHTML(item.note)})</span>` : '';
+      return `<li class="${cls}">
+        <span class="doing-text">${escapeHTML(item.text)}</span>${note}
+      </li>`;
+    })
     .join('');
 }
 
