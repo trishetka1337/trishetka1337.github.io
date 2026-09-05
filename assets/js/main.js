@@ -41,6 +41,37 @@ function ago(iso) {
 
 const pad = (n) => String(n).padStart(2, '0');
 
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+}
+
+/* ======================== выбранный город ========================= */
+// Один источник правды для погоды, солнца и спутников.
+
+let city = readCity();
+const cityListeners = [];
+
+function readCity() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('city') || 'null');
+    if (saved && Number.isFinite(saved.lat) && Number.isFinite(saved.lon)) return saved;
+  } catch { /* испорченная запись, берём город по умолчанию */ }
+  return { ...CONFIG.defaultCity };
+}
+
+function setCity(next) {
+  city = next;
+  try {
+    localStorage.setItem('city', JSON.stringify(next));
+  } catch { /* приватный режим, переживём */ }
+  $('city-name').textContent = next.name;
+  cityListeners.forEach((fn) => fn(next));
+}
+
+const onCityChange = (fn) => cityListeners.push(fn);
+
 /* ============================== тема ============================== */
 
 function initTheme() {
@@ -103,7 +134,7 @@ function initClock() {
   tick();
   setInterval(tick, 1000);
 
-  $('now-place').textContent = `${CONFIG.place.city}, ${CONFIG.place.country}`;
+  $('now-place').textContent = CONFIG.place.label;
   $('now-tz').textContent = CONFIG.place.tzLabel;
 }
 
@@ -123,46 +154,153 @@ const WMO = {
   95: 'гроза', 96: 'гроза с градом', 99: 'гроза с градом',
 };
 
-async function initWeather() {
-  const { lat, lon } = CONFIG.place;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m' +
-    '&wind_speed_unit=ms&timezone=auto';
-
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(r.status);
-    const { current: c } = await r.json();
-
-    $('wx-temp').textContent = `${Math.round(c.temperature_2m)}°`;
-    $('wx-desc').textContent = WMO[c.weather_code] ?? 'погода';
-    $('wx-wind').textContent = `${c.wind_speed_10m.toFixed(1)} м/с ${windDir(c.wind_direction_10m)}`;
-    $('wx-hum').textContent = `${c.relative_humidity_2m}%`;
-  } catch {
-    $('wx-desc').textContent = 'погода недоступна';
-  }
-}
-
 function windDir(deg) {
   const dirs = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
   return dirs[Math.round(deg / 45) % 8];
 }
 
+// Часовой пояс выбранного города. Приезжает вместе с погодой и нужен солнцу,
+// иначе восход показывается по часам зрителя, а не города.
+let cityTz = null;
+let redrawSun = () => {};
+
+async function loadWeather({ lat, lon }) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,' +
+    'wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timezone=auto';
+
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    const c = data.current;
+
+    cityTz = data.timezone || null;
+    redrawSun();
+    startLocalClock();
+
+    $('wx-temp').textContent = `${Math.round(c.temperature_2m)}°`;
+    $('wx-desc').textContent = WMO[c.weather_code] ?? 'погода';
+    $('wx-feels').textContent = `${Math.round(c.apparent_temperature)}°`;
+    $('wx-wind').textContent = `${c.wind_speed_10m.toFixed(1)} м/с ${windDir(c.wind_direction_10m)}`;
+    $('wx-hum').textContent = `${c.relative_humidity_2m}%`;
+  } catch {
+    $('wx-desc').textContent = 'недоступна';
+  }
+}
+
+/** Местное время выбранного города, рядом с его погодой. */
+let localClockTimer = null;
+function startLocalClock() {
+  clearInterval(localClockTimer);
+  if (!cityTz) return;
+  const fmt = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: cityTz, hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  const tick = () => { $('wx-local').textContent = fmt.format(new Date()); };
+  tick();
+  localClockTimer = setInterval(tick, 20000);
+}
+
+/* ========================= выбор города ========================= */
+
+function initCityPicker() {
+  const btn = $('city-btn');
+  const box = $('city-picker');
+  const input = $('city-input');
+  const results = $('city-results');
+  let timer = null;
+
+  const close = () => {
+    box.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    results.innerHTML = '';
+    input.value = '';
+  };
+
+  btn.addEventListener('click', () => {
+    const open = box.hidden;
+    box.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    if (open) input.focus();
+    else close();
+  });
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) {
+      results.innerHTML = '';
+      return;
+    }
+    // Ждём паузу в наборе, чтобы не долбить геокодер на каждой букве.
+    timer = setTimeout(() => search(q), 350);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) close();
+  });
+
+  async function search(q) {
+    const url = 'https://geocoding-api.open-meteo.com/v1/search?count=6&language=ru&format=json' +
+      `&name=${encodeURIComponent(q)}`;
+    let found = [];
+    try {
+      const r = await fetch(url);
+      found = (await r.json()).results || [];
+    } catch { /* сеть подвела, покажем пустой список */ }
+
+    if (!found.length) {
+      results.innerHTML = '<li class="city-empty">ничего не нашлось</li>';
+      return;
+    }
+
+    results.innerHTML = found
+      .map((f, i) => {
+        const region = [f.admin1, f.country].filter(Boolean).join(', ');
+        return `<li><button class="city-option" type="button" data-i="${i}">
+          <span class="city-option-name">${escapeHTML(f.name)}</span>
+          <span class="city-option-region">${escapeHTML(region)}</span>
+        </button></li>`;
+      })
+      .join('');
+
+    results.querySelectorAll('[data-i]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const f = found[+el.dataset.i];
+        setCity({
+          name: f.name,
+          country: f.country_code || '',
+          lat: f.latitude,
+          lon: f.longitude,
+        });
+        close();
+      });
+    });
+  }
+}
+
 /* ============================== солнце ============================== */
 
 function initSun() {
-  const { lat, lon, tz } = CONFIG.place;
-  const hm = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
-  });
-
   const draw = () => {
+    // Время восхода показываем по часам того города, который выбран.
+    const hm = new Intl.DateTimeFormat('ru-RU', {
+      ...(cityTz ? { timeZone: cityTz } : {}),
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const { lat, lon } = city;
     const now = new Date();
     const alt = sunAltitude(now, lat, lon);
     const { rise, set } = sunTimes(now, lat, lon);
 
     $('sun-altitude').textContent = alt.toFixed(1);
     $('sun-phase').textContent = alt > 0 ? 'день' : alt > -6 ? 'сумерки' : 'ночь';
+    $('sun-altitude').title = `пик сегодня: ${noonAltitude(now, lat, lon).toFixed(1)}°`;
 
     if (rise && set) {
       $('sun-rise').textContent = hm.format(rise);
@@ -189,8 +327,142 @@ function initSun() {
 
   draw();
   setInterval(draw, 60000);
-  // Пик дня показываем как подпись к высоте.
-  $('sun-altitude').title = `пик сегодня: ${noonAltitude(new Date(), lat, lon).toFixed(1)}°`;
+  onCityChange(draw);
+  redrawSun = draw; // погода приносит часовой пояс, после этого время пересчитывается
+}
+
+/* ============================ спутники ============================ */
+
+const rad = Math.PI / 180;
+
+async function initSats() {
+  const card = $('card-sats');
+  const data = await loadJSON('data/satellites.json');
+
+  // Нет орбитальных данных или не загрузилась библиотека — блока не будет.
+  if (!data || !Array.isArray(data.sats) || !data.sats.length || !window.satellite) {
+    card.remove();
+    return;
+  }
+
+  const recs = data.sats
+    .map((s) => {
+      try {
+        return { name: s.name, rec: window.satellite.twoline2satrec(s.tle1, s.tle2) };
+      } catch {
+        return null;
+      }
+    })
+    .filter((s) => s && !s.rec.error);
+
+  if (!recs.length) {
+    card.remove();
+    return;
+  }
+
+  // Через сколько минут спутник поднимется над горизонтом.
+  // Шагаем вперёд по минуте: восемь часов хватает почти на любую орбиту.
+  const nextPass = (rec, observer, from) => {
+    for (let m = 1; m <= 8 * 60; m++) {
+      const t = new Date(from.getTime() + m * 60000);
+      const pv = window.satellite.propagate(rec, t);
+      if (!pv || !pv.position) continue;
+      const ecf = window.satellite.eciToEcf(pv.position, window.satellite.gstime(t));
+      if (window.satellite.ecfToLookAngles(observer, ecf).elevation > 0) return m;
+    }
+    return null;
+  };
+
+  const passIn = (m) => {
+    if (m === null) return 'не в ближайшие 8 часов';
+    if (m < 60) return `через ${m} ${plural(m, 'минуту', 'минуты', 'минут')}`;
+    const h = Math.floor(m / 60);
+    return `через ${h} ${plural(h, 'час', 'часа', 'часов')} ${m % 60} мин`;
+  };
+
+  // Пролёты считаются дороже позиций, поэтому реже: раз в минуту и при смене города.
+  let passes = new Map();
+  const recalcPasses = () => {
+    const now = new Date();
+    const observer = { longitude: city.lon * rad, latitude: city.lat * rad, height: 0.1 };
+    passes = new Map(recs.map(({ name, rec }) => [name, nextPass(rec, observer, now)]));
+  };
+
+  const draw = () => {
+    const now = new Date();
+    const gmst = window.satellite.gstime(now);
+    const observer = { longitude: city.lon * rad, latitude: city.lat * rad, height: 0.1 };
+
+    const rows = [];
+    for (const { name, rec } of recs) {
+      const pv = window.satellite.propagate(rec, now);
+      if (!pv || !pv.position) continue;
+
+      const ecf = window.satellite.eciToEcf(pv.position, gmst);
+      const look = window.satellite.ecfToLookAngles(observer, ecf);
+      const geo = window.satellite.eciToGeodetic(pv.position, gmst);
+      const v = pv.velocity;
+
+      rows.push({
+        name,
+        elevation: look.elevation / rad,       // высота над горизонтом, градусы
+        azimuth: look.azimuth / rad,           // азимут, градусы от севера
+        range: look.rangeSat,                  // расстояние до наблюдателя, км
+        height: geo.height,                    // высота орбиты, км
+        speed: Math.hypot(v.x, v.y, v.z) * 3600, // км/ч
+      });
+    }
+
+    // Сначала те, что выше над горизонтом.
+    rows.sort((a, b) => b.elevation - a.elevation);
+    const visible = rows.filter((r) => r.elevation > 0);
+
+    // Падежи городов не склоняем: город выносим отдельной строкой под списком.
+    $('sats-summary').textContent = `видно ${visible.length} из ${rows.length}`;
+
+    // Небо сверху: центр — зенит, край круга — горизонт.
+    $('sky-dots').innerHTML = visible
+      .map((r) => {
+        const dist = ((90 - r.elevation) / 90) * 100;
+        const x = dist * Math.sin(r.azimuth * rad);
+        const y = -dist * Math.cos(r.azimuth * rad);
+        return `<g class="sky-sat" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+          <circle r="3.5"/>
+          <text x="6" y="3">${escapeHTML(r.name)}</text>
+        </g>`;
+      })
+      .join('');
+
+    // Пустое небо без пояснения выглядит как поломка.
+    if (!visible.length) {
+      $('sky-dots').innerHTML =
+        '<text class="sky-empty" x="0" y="4">сейчас никого</text>';
+    }
+
+    $('sats').innerHTML = rows
+      .map((r) => {
+        const up = r.elevation > 0;
+        const when = up
+          ? `${r.elevation.toFixed(0)}° над горизонтом`
+          : passIn(passes.get(r.name) ?? null);
+        return `<li class="sat ${up ? 'sat--up' : ''}">
+          <span class="sat-name">${escapeHTML(r.name)}</span>
+          <span class="sat-el">${when}</span>
+          <span class="sat-num">${Math.round(r.height)} км</span>
+          <span class="sat-num">${Math.round(r.speed).toLocaleString('ru-RU')} км/ч</span>
+        </li>`;
+      })
+      .join('');
+
+    $('sats-note').textContent =
+      `точка наблюдения: ${city.name} · орбиты обновлены ${ago(data.updated_at)}`;
+  };
+
+  recalcPasses();
+  draw();
+  setInterval(draw, 5000);
+  setInterval(recalcPasses, 60000);
+  onCityChange(() => { recalcPasses(); draw(); });
 }
 
 /* ============================== github ============================== */
@@ -204,7 +476,7 @@ async function initGitHub() {
     try {
       const [u, repos] = await Promise.all([
         fetch(`https://api.github.com/users/${CONFIG.github}`).then((r) => r.json()),
-        fetch(`https://api.github.com/users/${CONFIG.github}/repos?sort=updated&per_page=6`).then((r) => r.json()),
+        fetch(`https://api.github.com/users/${CONFIG.github}/repos?sort=updated&per_page=12`).then((r) => r.json()),
       ]);
       data = {
         followers: u.followers,
@@ -271,7 +543,7 @@ function renderCommits(commits) {
 function renderProjects(repos) {
   const box = $('projects');
   if (!Array.isArray(repos) || !repos.length) {
-    document.getElementById('card-projects').remove();
+    $('card-projects').remove();
     return;
   }
 
@@ -313,11 +585,12 @@ function renderPinned() {
   const items = CONFIG.pinned || [];
 
   if (!items.length) {
-    document.getElementById('card-pinned').remove();
+    $('card-pinned').remove();
     return;
   }
 
-  $('pinned-count').textContent = `${items.length} ${plural(items.length, 'проект', 'проекта', 'проектов')}`;
+  $('pinned-count').textContent =
+    `${items.length} ${plural(items.length, 'проект', 'проекта', 'проектов')}`;
 
   box.innerHTML = items
     .map((p) => {
@@ -345,7 +618,7 @@ async function initInfra() {
   const box = $('infra-nodes');
 
   if (!data || !Array.isArray(data.nodes) || !data.nodes.length) {
-    document.getElementById('card-infra').remove();
+    $('card-infra').remove();
     return;
   }
 
@@ -372,7 +645,7 @@ async function initMusic() {
   const data = await loadJSON('data/music.json');
   if (!data || !data.now) return;
 
-  document.getElementById('card-music').hidden = false;
+  $('card-music').hidden = false;
   $('track-name').textContent = data.now.name;
   $('track-artist').textContent = data.now.artist;
   if (data.now.art) $('track-art').style.backgroundImage = `url("${data.now.art}")`;
@@ -391,23 +664,7 @@ async function initMusic() {
   }
 }
 
-/* =============================== чек =============================== */
-
-function initReceipt() {
-  const now = new Date();
-  $('rc-items').innerHTML = CONFIG.stack
-    .map((s) => `<li><span>${escapeHTML(s)}</span><span>0.00</span></li>`)
-    .join('');
-  $('rc-count').textContent = CONFIG.stack.length;
-  $('rc-since').textContent = CONFIG.memberSince;
-  $('rc-date').textContent =
-    `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  // Номер чека растёт со временем: просто день года плюс минуты.
-  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-  $('rc-order').textContent = `#${String(dayOfYear).padStart(4, '0')}`;
-}
-
-/* =========================== ссылки и кольцо =========================== */
+/* =========================== связь и кольцо =========================== */
 
 function initLinks() {
   // Пункты без значения ещё не заполнены — на странице их быть не должно.
@@ -473,22 +730,21 @@ function initCopy() {
   });
 }
 
-function escapeHTML(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
-  );
-}
-
 /* ============================== запуск ============================== */
 
 initTheme();
 initRotator();
 initClock();
+initCityPicker();
 initSun();
-initReceipt();
 renderPinned();
 initLinks();
-initWeather();
+
+$('city-name').textContent = city.name;
+loadWeather(city);
+onCityChange(loadWeather);
+
+initSats();
 initGitHub();
 initInfra();
 initMusic();

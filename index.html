@@ -44,31 +44,47 @@
 
   <div class="grid">
 
-    <!-- ВРЕМЯ И ПОГОДА -->
-    <section class="card card--wide" id="card-now">
+    <!-- ВРЕМЯ -->
+    <section class="card" id="card-now">
       <div class="card-head">
         <span class="card-title">сейчас</span>
         <span class="chip" id="now-place">—</span>
       </div>
-      <div class="now">
-        <div class="now-main">
-          <div class="clock" id="clock">
-            <span class="clock-hm">--:--</span><span class="clock-s">:--</span>
-          </div>
-          <div class="now-date" id="now-date">—</div>
-        </div>
-        <div class="now-side">
-          <div class="metric">
-            <span class="metric-value" id="wx-temp">—</span>
-            <span class="metric-label" id="wx-desc">погода грузится</span>
-          </div>
-          <dl class="kv">
-            <div><dt>ветер</dt><dd id="wx-wind">—</dd></div>
-            <div><dt>влажность</dt><dd id="wx-hum">—</dd></div>
-            <div><dt>зона</dt><dd id="now-tz">—</dd></div>
-          </dl>
-        </div>
+      <div class="clock" id="clock">
+        <span class="clock-hm">--:--</span><span class="clock-s">:--</span>
       </div>
+      <div class="now-date" id="now-date">—</div>
+      <dl class="kv kv--row">
+        <div><dt>зона</dt><dd id="now-tz">—</dd></div>
+      </dl>
+    </section>
+
+    <!-- ПОГОДА -->
+    <section class="card" id="card-weather">
+      <div class="card-head">
+        <span class="card-title">погода</span>
+        <button class="chip chip--btn" id="city-btn" type="button" aria-expanded="false">
+          <span id="city-name">—</span>
+          <span class="chip-caret" aria-hidden="true">▾</span>
+        </button>
+      </div>
+
+      <div class="city-picker" id="city-picker" hidden>
+        <input class="city-input" id="city-input" type="search" autocomplete="off"
+               placeholder="город: Токио, Лима, Мурманск…" aria-label="Поиск города">
+        <ul class="city-results" id="city-results"></ul>
+      </div>
+
+      <div class="metric">
+        <span class="metric-value" id="wx-temp">—</span>
+        <span class="metric-label" id="wx-desc">грузится</span>
+      </div>
+      <dl class="kv kv--row kv--four">
+        <div><dt>ощущается</dt><dd id="wx-feels">—</dd></div>
+        <div><dt>ветер</dt><dd id="wx-wind">—</dd></div>
+        <div><dt>влажность</dt><dd id="wx-hum">—</dd></div>
+        <div><dt>там сейчас</dt><dd id="wx-local">—</dd></div>
+      </dl>
     </section>
 
     <!-- СОЛНЦЕ -->
@@ -154,28 +170,29 @@
       <ul class="projects" id="projects"></ul>
     </section>
 
-    <!-- ЧЕК -->
-    <section class="card card--receipt" id="card-receipt">
-      <div class="receipt">
-        <div class="receipt-head">
-          <div class="receipt-shop">VILLCREAT GENERAL</div>
-          <div class="receipt-sub">self-hosted · открыто 24/7</div>
-        </div>
-        <div class="receipt-line"></div>
-        <div class="receipt-row receipt-row--muted"><span>ЧЕК</span><span id="rc-order">#0001</span></div>
-        <div class="receipt-row receipt-row--muted"><span>ДАТА</span><span id="rc-date">—</span></div>
-        <div class="receipt-line"></div>
-        <div class="receipt-row receipt-row--head"><span>ПОЗИЦИЯ</span><span>ЦЕНА</span></div>
-        <ul class="receipt-items" id="rc-items"></ul>
-        <div class="receipt-line"></div>
-        <div class="receipt-row"><span>ИТОГО</span><span>0.00 ₽</span></div>
-        <div class="receipt-row receipt-row--muted"><span>СКИДКА</span><span>100%</span></div>
-        <div class="receipt-stamp">ОПЛАЧЕНО ПОЛНОСТЬЮ</div>
-        <div class="receipt-line receipt-line--dashed"></div>
-        <div class="receipt-row receipt-row--muted"><span>КЛИЕНТ С</span><span id="rc-since">—</span></div>
-        <div class="receipt-row receipt-row--muted"><span>ПОЗИЦИЙ</span><span id="rc-count">—</span></div>
-        <div class="receipt-foot">СПАСИБО ЗА ПОКУПКУ<br>ВОЗВРАТУ НЕ ПОДЛЕЖИТ</div>
+    <!-- СПУТНИКИ -->
+    <section class="card card--wide" id="card-sats">
+      <div class="card-head">
+        <span class="card-title">над головой</span>
+        <span class="chip" id="sats-summary">—</span>
       </div>
+      <div class="sky-wrap">
+        <div class="sky" role="img" aria-label="Небо над выбранным городом, вид сверху">
+          <svg viewBox="-110 -110 220 220" aria-hidden="true">
+            <circle class="sky-ring" r="100"/>
+            <circle class="sky-ring sky-ring--mid" r="50"/>
+            <line class="sky-cross" x1="-100" y1="0" x2="100" y2="0"/>
+            <line class="sky-cross" x1="0" y1="-100" x2="0" y2="100"/>
+            <text class="sky-label" x="0" y="-104">С</text>
+            <text class="sky-label" x="106" y="4">В</text>
+            <text class="sky-label" x="0" y="112">Ю</text>
+            <text class="sky-label" x="-106" y="4">З</text>
+            <g id="sky-dots"></g>
+          </svg>
+        </div>
+        <ul class="sats" id="sats"></ul>
+      </div>
+      <p class="card-note" id="sats-note">—</p>
     </section>
 
     <!-- КОНТАКТЫ -->
@@ -196,6 +213,8 @@
   </div>
 </footer>
 
+<!-- Расчёт орбит SGP4. Если не загрузится, блок спутников просто не покажется. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/5.0.0/satellite.min.js"></script>
 <script type="module" src="assets/js/main.js"></script>
 </body>
 </html>

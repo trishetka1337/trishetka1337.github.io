@@ -5,14 +5,20 @@ export const CONFIG = {
   // Чем занят прямо сейчас. Крутится в шапке.
   doing: ['building', 'self-hosting', 'breaking', 'fixing'],
 
-  // Точка на карте. Погода и солнце считаются отсюда.
+  // Часы. Город не называем: только страна и смещение.
   place: {
-    city: 'Moscow',
+    label: 'Vill-Land',
+    tz: 'Europe/Moscow',
+    tzLabel: 'UTC+3',
+  },
+
+  // Город по умолчанию для погоды, солнца и спутников.
+  // Посетитель может выбрать любой другой, выбор сохранится у него в браузере.
+  defaultCity: {
+    name: 'Москва',
     country: 'RU',
     lat: 55.7558,
     lon: 37.6173,
-    tz: 'Europe/Moscow',
-    tzLabel: 'UTC+3 · MSK',
   },
 
   github: 'villcreat',

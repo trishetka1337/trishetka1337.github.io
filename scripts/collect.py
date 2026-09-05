@@ -251,6 +251,57 @@ def collect_music():
     })
 
 
+# -------------------------------------------------------------- спутники
+
+# Кого показываем в блоке «над головой». Номера каталога NORAD.
+SATELLITES = [
+    (25544, "МКС"),
+    (48274, "Тяньгун"),
+    (20580, "Hubble"),
+    (33591, "NOAA-19"),
+    (25994, "Terra"),
+    (27424, "Aqua"),
+    (49260, "Landsat-9"),
+]
+
+
+def fetch_tle(catnr):
+    """Две строки орбитальных элементов с Celestrak."""
+    url = f"https://celestrak.org/NORAD/elements/gp.php?CATNR={catnr}&FORMAT=tle"
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", UA)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        text = r.read().decode("utf-8", "replace")
+
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    # На неизвестный номер приходит текстовая заглушка, а не элементы.
+    if len(lines) < 3 or not lines[1].startswith("1 ") or not lines[2].startswith("2 "):
+        raise ValueError(f"нет элементов: {lines[:1]}")
+    return lines[1], lines[2]
+
+
+def collect_satellites():
+    print("спутники:")
+    sats = []
+    for catnr, name in SATELLITES:
+        try:
+            tle1, tle2 = fetch_tle(catnr)
+        except Exception as e:
+            print(f"  {name}: {e}")
+            continue
+        sats.append({"id": catnr, "name": name, "tle1": tle1, "tle2": tle2})
+        print(f"  {name}: ок")
+
+    if not sats:
+        print("  ничего не собралось, файл не трогаем")
+        return
+
+    write("satellites.json", {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "sats": sats,
+    })
+
+
 # --------------------------------------------------------------- серверы
 
 def probe(host, port, timeout=4.0):
@@ -297,6 +348,7 @@ def collect_infra():
 if __name__ == "__main__":
     collect_github()
     collect_music()
+    collect_satellites()
     collect_infra()
     write("meta.json", {"built_at": datetime.now(timezone.utc).isoformat()})
     print("готово")
