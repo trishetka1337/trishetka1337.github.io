@@ -775,6 +775,35 @@ function renderPinned() {
     .join('');
 }
 
+/* =============================== стек =============================== */
+
+function renderStack() {
+  const items = CONFIG.stack || [];
+  if (!items.length) {
+    $('card-stack').remove();
+    return;
+  }
+
+  $('stack-count').textContent =
+    `${items.length} ${plural(items.length, 'штука', 'штуки', 'штук')}`;
+
+  $('stack').innerHTML = items
+    .map((s) => {
+      const lvl = Math.min(3, Math.max(1, s.level || 1));
+      const bars = [1, 2, 3]
+        .map((i) => `<i class="${i <= lvl ? 'on' : ''}"></i>`)
+        .join('');
+      return `<li class="skill">
+        <span class="skill-top">
+          <span class="skill-name">${escapeHTML(s.name)}</span>
+          <span class="skill-bars" aria-label="уровень ${lvl} из 3">${bars}</span>
+        </span>
+        ${s.where ? `<span class="skill-where">${escapeHTML(s.where)}</span>` : ''}
+      </li>`;
+    })
+    .join('');
+}
+
 /* ========================== инфраструктура ========================== */
 
 async function initInfra() {
@@ -902,6 +931,7 @@ initClock();
 initCityPicker();
 initSun();
 renderPinned();
+renderStack();
 initLinks();
 
 $('city-name').textContent = cityChosen ? city.name : 'определяю…';

@@ -65,8 +65,17 @@ export const CONFIG = {
     { label: 'nichind', href: 'https://nichind.dev' },
   ],
 
-  // Навыки для чека. Порядок = порядок строк.
-  stack: ['Flutter / Dart', 'Python', 'Go', 'Linux / VPS', 'Docker', 'Bash', 'C++'],
+  // СТЕК. level: 3 основное, 2 уверенно, 1 по необходимости.
+  // where — где реально применял, это честнее абстрактных лет опыта.
+  stack: [
+    { name: 'Flutter / Dart', level: 3, where: 'VPS Simple, Пульт' },
+    { name: 'Python',         level: 3, where: 'боты, автоматизация, парсеры' },
+    { name: 'Linux / VPS',    level: 3, where: 'свои серверы, почта, VPN' },
+    { name: 'Docker',         level: 2, where: 'Nextcloud, разное self-hosted' },
+    { name: 'Bash',           level: 2, where: 'деплой и обслуживание серверов' },
+    { name: 'Go',             level: 2, where: 'форки серверных проектов' },
+    { name: 'C++',            level: 1, where: 'моды для игр' },
+  ],
 
   memberSince: 'JUN 2025',
 };

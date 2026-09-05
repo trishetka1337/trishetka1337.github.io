@@ -520,6 +520,30 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 .sat-num { font-family: var(--mono); font-size: 10px; color: var(--text-3); }
 .sat-num:last-child { text-align: right; }
 
+/* ---------- Стек ---------- */
+.stack { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.skill {
+  padding: 9px 11px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.skill-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.skill-name { font-size: 13px; }
+.skill-where {
+  display: block; margin-top: 3px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .04em; color: var(--text-3);
+}
+
+.skill-bars { display: inline-flex; gap: 3px; flex: none; }
+.skill-bars i {
+  width: 16px; height: 4px; border-radius: 2px;
+  background: var(--line);
+}
+.skill-bars i.on { background: var(--accent); }
+.skill-bars i.on:nth-child(1) { opacity: .55; }
+.skill-bars i.on:nth-child(2) { opacity: .78; }
+
 /* ---------- Связь ---------- */
 .links {
   list-style: none; margin: 0; padding: 0;
