@@ -39,6 +39,27 @@ function ago(iso) {
   return `${mo} ${plural(mo, 'месяц', 'месяца', 'месяцев')} назад`;
 }
 
+/**
+ * То же, но для даты без времени: считаем календарные дни, иначе
+ * поставленная сегодня дата показывается как «20 часов назад».
+ */
+function agoDays(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const days = Math.round((midnight - d) / 86400000);
+
+  if (days <= 0) return 'сегодня';
+  if (days === 1) return 'вчера';
+  if (days < 31) return `${days} ${plural(days, 'день', 'дня', 'дней')} назад`;
+  const mo = Math.round(days / 30);
+  if (mo < 12) return `${mo} ${plural(mo, 'месяц', 'месяца', 'месяцев')} назад`;
+  const y = Math.round(mo / 12);
+  return `${y} ${plural(y, 'год', 'года', 'лет')} назад`;
+}
+
 const pad = (n) => String(n).padStart(2, '0');
 
 function escapeHTML(s) {
@@ -775,6 +796,23 @@ function renderPinned() {
     .join('');
 }
 
+/* ============================ чем занят ============================ */
+
+function renderDoing() {
+  const now = CONFIG.now;
+  if (!now || !Array.isArray(now.lines) || !now.lines.length) {
+    $('card-now-doing').remove();
+    return;
+  }
+
+  // Дата обновления важнее самого текста: по ней видно, живая страница или брошенная.
+  $('now-updated').textContent = now.updated ? `обновлено ${agoDays(now.updated)}` : '';
+
+  $('doing').innerHTML = now.lines
+    .map((line) => `<li class="doing-item">${escapeHTML(line)}</li>`)
+    .join('');
+}
+
 /* =============================== стек =============================== */
 
 function renderStack() {
@@ -933,6 +971,7 @@ initClock();
 initCityPicker();
 initSun();
 renderPinned();
+renderDoing();
 renderStack();
 initLinks();
 
