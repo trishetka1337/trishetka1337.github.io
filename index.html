@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>villcreat</title>
+<meta name="description" content="villcreat — личная страница, живые данные, self-hosted инфраструктура.">
+<meta property="og:title" content="villcreat">
+<meta property="og:description" content="Личная страница с живыми данными.">
+<meta property="og:type" content="profile">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127756;</text></svg>">
+<link rel="preconnect" href="https://api.open-meteo.com">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="me" href="https://github.com/villcreat">
+<link rel="me" href="https://t.me/villcreat">
+<link rel="me" href="mailto:ttyuki97@gmail.com">
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">villcreat</span>
+  </a>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
+    <span class="theme-dot" aria-hidden="true"></span>
+    <span id="theme-label">dark</span>
+  </button>
+</header>
+
+<main class="wrap">
+
+  <!-- ШАПКА -->
+  <section class="hero">
+    <h1 class="hero-name">villcreat</h1>
+    <p class="hero-line">
+      is currently
+      <span class="rotator" id="rotator" aria-live="polite"><span class="rotator-word">building</span></span>
+    </p>
+    <p class="hero-sub" id="hero-sub">self-hosted всё подряд</p>
+  </section>
+
+  <div class="grid">
+
+    <!-- ВРЕМЯ И ПОГОДА -->
+    <section class="card card--wide" id="card-now">
+      <div class="card-head">
+        <span class="card-title">сейчас</span>
+        <span class="chip" id="now-place">—</span>
+      </div>
+      <div class="now">
+        <div class="now-main">
+          <div class="clock" id="clock">
+            <span class="clock-hm">--:--</span><span class="clock-s">:--</span>
+          </div>
+          <div class="now-date" id="now-date">—</div>
+        </div>
+        <div class="now-side">
+          <div class="metric">
+            <span class="metric-value" id="wx-temp">—</span>
+            <span class="metric-label" id="wx-desc">погода грузится</span>
+          </div>
+          <dl class="kv">
+            <div><dt>ветер</dt><dd id="wx-wind">—</dd></div>
+            <div><dt>влажность</dt><dd id="wx-hum">—</dd></div>
+            <div><dt>зона</dt><dd id="now-tz">—</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- СОЛНЦЕ -->
+    <section class="card" id="card-sun">
+      <div class="card-head">
+        <span class="card-title">солнце</span>
+        <span class="chip" id="sun-phase">—</span>
+      </div>
+      <div class="sun-alt"><span id="sun-altitude">—</span><span class="unit">° над горизонтом</span></div>
+      <div class="sun-track" role="img" aria-label="Дуга движения солнца">
+        <svg viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+          <path class="sun-horizon" d="M0 78 H300"/>
+          <path class="sun-arc" id="sun-arc" d="M10 78 Q150 -6 290 78"/>
+          <circle class="sun-dot" id="sun-dot" cx="10" cy="78" r="5"/>
+        </svg>
+      </div>
+      <dl class="kv kv--row">
+        <div><dt>восход</dt><dd id="sun-rise">—</dd></div>
+        <div><dt>закат</dt><dd id="sun-set">—</dd></div>
+        <div><dt>светло</dt><dd id="sun-len">—</dd></div>
+      </dl>
+    </section>
+
+    <!-- GITHUB -->
+    <section class="card card--wide" id="card-gh">
+      <div class="card-head">
+        <span class="card-title">github</span>
+        <a class="chip chip--link" data-gh-profile="" data-gh-label="nick" href="https://github.com/villcreat" target="_blank" rel="noopener">@villcreat</a>
+      </div>
+      <div class="gh-graph" id="gh-graph" role="img" aria-label="График контрибуций за год"></div>
+      <div class="gh-stats">
+        <div class="stat"><b id="gh-contrib">—</b><span>контрибуций/год</span></div>
+        <div class="stat"><b id="gh-streak">—</b><span>дней подряд</span></div>
+        <div class="stat"><b id="gh-repos">—</b><span>репозиториев</span></div>
+        <div class="stat"><b id="gh-followers">—</b><span>подписчиков</span></div>
+      </div>
+      <ul class="commits" id="gh-commits"></ul>
+    </section>
+
+    <!-- СЕРВЕРЫ -->
+    <section class="card" id="card-infra">
+      <div class="card-head">
+        <span class="card-title">инфраструктура</span>
+        <span class="chip" id="infra-summary">—</span>
+      </div>
+      <ul class="nodes" id="infra-nodes">
+        <li class="node node--skeleton"><span class="node-name">проверка…</span></li>
+      </ul>
+      <p class="card-note" id="infra-checked">—</p>
+    </section>
+
+    <!-- МУЗЫКА -->
+    <section class="card" id="card-music" hidden>
+      <div class="card-head">
+        <span class="card-title">играет</span>
+        <span class="chip" id="music-source">last.fm</span>
+      </div>
+      <div class="track" id="track">
+        <div class="track-art" id="track-art" aria-hidden="true"></div>
+        <div class="track-meta">
+          <div class="track-name" id="track-name">—</div>
+          <div class="track-artist" id="track-artist">—</div>
+        </div>
+      </div>
+      <ul class="scrobbles" id="scrobbles"></ul>
+    </section>
+
+    <!-- ГЛАВНОЕ -->
+    <section class="card card--wide" id="card-pinned">
+      <div class="card-head">
+        <span class="card-title">главное</span>
+        <span class="chip" id="pinned-count">—</span>
+      </div>
+      <ul class="pins" id="pinned"></ul>
+    </section>
+
+    <!-- ПОСЛЕДНИЕ РЕПОЗИТОРИИ -->
+    <section class="card card--wide" id="card-projects">
+      <div class="card-head">
+        <span class="card-title" id="projects-title">последние репозитории</span>
+        <a class="chip chip--link" data-gh-profile="?tab=repositories" href="https://github.com/villcreat?tab=repositories" target="_blank" rel="noopener">все репозитории</a>
+      </div>
+      <ul class="projects" id="projects"></ul>
+    </section>
+
+    <!-- ЧЕК -->
+    <section class="card card--receipt" id="card-receipt">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div class="receipt-shop">VILLCREAT GENERAL</div>
+          <div class="receipt-sub">self-hosted · открыто 24/7</div>
+        </div>
+        <div class="receipt-line"></div>
+        <div class="receipt-row receipt-row--muted"><span>ЧЕК</span><span id="rc-order">#0001</span></div>
+        <div class="receipt-row receipt-row--muted"><span>ДАТА</span><span id="rc-date">—</span></div>
+        <div class="receipt-line"></div>
+        <div class="receipt-row receipt-row--head"><span>ПОЗИЦИЯ</span><span>ЦЕНА</span></div>
+        <ul class="receipt-items" id="rc-items"></ul>
+        <div class="receipt-line"></div>
+        <div class="receipt-row"><span>ИТОГО</span><span>0.00 ₽</span></div>
+        <div class="receipt-row receipt-row--muted"><span>СКИДКА</span><span>100%</span></div>
+        <div class="receipt-stamp">ОПЛАЧЕНО ПОЛНОСТЬЮ</div>
+        <div class="receipt-line receipt-line--dashed"></div>
+        <div class="receipt-row receipt-row--muted"><span>КЛИЕНТ С</span><span id="rc-since">—</span></div>
+        <div class="receipt-row receipt-row--muted"><span>ПОЗИЦИЙ</span><span id="rc-count">—</span></div>
+        <div class="receipt-foot">СПАСИБО ЗА ПОКУПКУ<br>ВОЗВРАТУ НЕ ПОДЛЕЖИТ</div>
+      </div>
+    </section>
+
+    <!-- КОНТАКТЫ -->
+    <section class="card card--wide" id="card-links">
+      <div class="card-head"><span class="card-title">связь</span></div>
+      <ul class="links" id="links"></ul>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="ring" id="webring"></div>
+  <div class="footer-meta">
+    <span>villcreat © <span id="year">2026</span></span>
+    <span class="footer-dot">·</span>
+    <span id="build-stamp">—</span>
+  </div>
+</footer>
+
+<script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
