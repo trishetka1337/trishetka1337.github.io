@@ -1,7 +1,60 @@
 import { CONFIG } from './config.js';
 import { sunAltitude, sunTimes, noonAltitude } from './sun.js';
+import { LANGS, STRINGS, detectLang, pick, pluralize } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+
+/* ============================== язык ============================== */
+
+const lang = detectLang();
+const T = STRINGS[lang];
+
+document.documentElement.lang = lang;
+
+/** Текст из конфига на текущем языке. */
+const L = (value) => pick(value, lang);
+
+/** Форма слова по числу. */
+const plural = (n, key) => pluralize(n, T.units[key], lang);
+
+function initLangSwitch() {
+  $('langs').innerHTML = LANGS
+    .map((code) => `<button class="lang ${code === lang ? 'lang--on' : ''}" type="button"
+      data-lang="${code}" ${code === lang ? 'aria-current="true"' : ''}>${code}</button>`)
+    .join('');
+
+  $('langs').querySelectorAll('[data-lang]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.lang === lang) return;
+      try {
+        localStorage.setItem('lang', btn.dataset.lang);
+      } catch { /* приватный режим */ }
+      // Перезагрузка вместо перерисовки: надёжнее и без осиротевших таймеров.
+      location.reload();
+    });
+  });
+}
+
+/** Подписи, у которых текст не зависит от данных. */
+function applyStatic() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const value = T[el.dataset.i18n];
+    if (value) el.textContent = value;
+  });
+
+  $('city-input').placeholder = T.city_search;
+  $('city-input').setAttribute('aria-label', T.city_search_label);
+  $('links-title').textContent = lang === 'ru' ? 'связь' : 'contacts';
+
+  $('sky-n').textContent = T.sky_compass.n;
+  $('sky-e').textContent = T.sky_compass.e;
+  $('sky-s').textContent = T.sky_compass.s;
+  $('sky-w').textContent = T.sky_compass.w;
+
+  // Блог существует на двух языках, ведём в нужную версию.
+  $('nav-blog').href = lang === 'en' ? 'blog.en.html' : 'blog.html';
+  $('nav-feed').href = lang === 'en' ? 'feed.en.xml' : 'feed.xml';
+}
 
 /* ============================ утилиты ============================ */
 
@@ -16,27 +69,22 @@ async function loadJSON(path) {
   }
 }
 
-/** Русские окончания: 5 минут, 21 минута, 2 минуты. */
-function plural(n, one, few, many) {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
-  return many;
-}
-
 function ago(iso) {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const min = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (min < 1) return 'только что';
-  if (min < 60) return `${min} ${plural(min, 'минуту', 'минуты', 'минут')} назад`;
+
+  const say = (n, key) => (lang === 'ru'
+    ? `${n} ${plural(n, key)} ${T.ago}`
+    : `${n} ${plural(n, key)} ${T.ago}`);
+
+  if (min < 1) return T.just_now;
+  if (min < 60) return say(min, 'minute');
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} ${plural(h, 'час', 'часа', 'часов')} назад`;
+  if (h < 24) return say(h, 'hour');
   const d = Math.round(h / 24);
-  if (d < 31) return `${d} ${plural(d, 'день', 'дня', 'дней')} назад`;
-  const mo = Math.round(d / 30);
-  return `${mo} ${plural(mo, 'месяц', 'месяца', 'месяцев')} назад`;
+  if (d < 31) return say(d, 'day');
+  return say(Math.round(d / 30), 'month');
 }
 
 /**
@@ -51,13 +99,13 @@ function agoDays(dateStr) {
   midnight.setHours(0, 0, 0, 0);
   const days = Math.round((midnight - d) / 86400000);
 
-  if (days <= 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 31) return `${days} ${plural(days, 'день', 'дня', 'дней')} назад`;
+  if (days <= 0) return T.today;
+  if (days === 1) return T.yesterday;
+  if (days < 31) return `${days} ${plural(days, 'day')} ${T.ago}`;
   const mo = Math.round(days / 30);
-  if (mo < 12) return `${mo} ${plural(mo, 'месяц', 'месяца', 'месяцев')} назад`;
+  if (mo < 12) return `${mo} ${plural(mo, 'month')} ${T.ago}`;
   const y = Math.round(mo / 12);
-  return `${y} ${plural(y, 'год', 'года', 'лет')} назад`;
+  return `${y} ${plural(y, 'year')} ${T.ago}`;
 }
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -72,7 +120,7 @@ function escapeHTML(s) {
 // Один источник правды для погоды, солнца и спутников.
 
 let city = readSavedCity() || { ...CONFIG.defaultCity };
-const cityChosen = Boolean(readSavedCity()); // выбирал ли посетитель город руками
+const cityChosen = Boolean(readSavedCity());
 const cityListeners = [];
 
 function readSavedCity() {
@@ -83,14 +131,11 @@ function readSavedCity() {
   return null;
 }
 
-// Откуда взялся город. Влияет только на подпись под погодой.
-let cityMode = cityChosen ? 'manual' : 'default';
-
 const WHO = {
-  manual:  'это погода в городе, который выбрали вы',
-  geo:     'это погода по вашему местоположению',
-  auto:    'это погода у вас: город определён по часовому поясу браузера',
-  default: 'город по умолчанию, нажмите на него и выберите свой',
+  manual: () => T.who_manual,
+  geo: () => T.who_geo,
+  auto: () => T.who_auto,
+  default: () => T.who_default,
 };
 
 /**
@@ -99,14 +144,13 @@ const WHO = {
  */
 function setCity(next, persist = true, mode = persist ? 'manual' : 'auto') {
   city = next;
-  cityMode = mode;
   if (persist) {
     try {
       localStorage.setItem('city', JSON.stringify(next));
     } catch { /* приватный режим, переживём */ }
   }
   $('city-name').textContent = next.name;
-  $('wx-who').textContent = WHO[mode];
+  $('wx-who').textContent = WHO[mode]();
   cityListeners.forEach((fn) => fn(next));
 }
 
@@ -117,8 +161,8 @@ const onCityChange = (fn) => cityListeners.push(fn);
  * с искомым. Без этой проверки поиск подсовывает однофамильцев: по запросу
  * New York находится деревня Йорк в Небраске.
  */
-async function geocodeInZone(query, tz, lang) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?count=10&language=${lang}` +
+async function geocodeInZone(query, tz, searchLang) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?count=10&language=${searchLang}` +
     `&format=json&name=${encodeURIComponent(query)}`;
   try {
     const r = await fetch(url);
@@ -139,10 +183,6 @@ async function geocodeInZone(query, tz, lang) {
  * Имя пояса и так содержит крупный город: Europe/Moscow, Asia/Tokyo.
  * Это не требует ни разрешения на геолокацию, ни обращения к сервисам,
  * которые определяют место по адресу: пояс уже известен браузеру.
- *
- * Русский поиск закрывает большинство поясов, английский добирает те,
- * где русского названия в базе нет. Если ничего не совпало по поясу,
- * возвращаем null: пусть лучше останется город по умолчанию, чем чужая деревня.
  */
 async function detectCityByTimezone() {
   let tz = '';
@@ -153,7 +193,7 @@ async function detectCityByTimezone() {
   if (!tz.includes('/')) return null;
   const guess = tz.split('/').pop().replace(/_/g, ' ');
 
-  return (await geocodeInZone(guess, tz, 'ru')) || geocodeInZone(guess, tz, 'en');
+  return (await geocodeInZone(guess, tz, lang)) || geocodeInZone(guess, tz, 'en');
 }
 
 /* ============================== тема ============================== */
@@ -187,7 +227,7 @@ function initRotator() {
   let i = 0;
   setInterval(() => {
     i = (i + 1) % words.length;
-    box.innerHTML = `<span class="rotator-word">${words[i]}</span>`;
+    box.innerHTML = `<span class="rotator-word">${escapeHTML(L(words[i]))}</span>`;
   }, 2800);
 }
 
@@ -218,18 +258,30 @@ function tzLabel(tz) {
   return `UTC${sign}${h}${m ? ':' + pad(m) : ''}`;
 }
 
+/** Насколько часы гостя убежали вперёд относительно моих. */
+function diffText(min) {
+  if (min === 0) return T.diff_same;
+  const abs = Math.abs(min);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  const parts = [];
+  if (h) parts.push(`${h} ${plural(h, 'hour')}`);
+  if (m) parts.push(`${m} ${lang === 'ru' ? 'мин' : 'min'}`);
+  return `${min > 0 ? '+' : '−'}${parts.join(' ')}`;
+}
+
 function initClock() {
   // Крупные часы — время гостя: с них он и начинает смотреть страницу.
   const guestTz = Intl.DateTimeFormat().resolvedOptions().timeZone || CONFIG.place.tz;
   const authorTz = CONFIG.place.tz;
 
-  const guestTime = new Intl.DateTimeFormat('ru-RU', {
+  const guestTime = new Intl.DateTimeFormat(T.locale, {
     timeZone: guestTz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   });
-  const guestDate = new Intl.DateTimeFormat('ru-RU', {
+  const guestDate = new Intl.DateTimeFormat(T.locale, {
     timeZone: guestTz, weekday: 'long', day: 'numeric', month: 'long',
   });
-  const authorTime = new Intl.DateTimeFormat('ru-RU', {
+  const authorTime = new Intl.DateTimeFormat(T.locale, {
     timeZone: authorTz, hour: '2-digit', minute: '2-digit', hour12: false,
   });
 
@@ -256,41 +308,13 @@ function initClock() {
   $('now-diff').textContent = diffText(tzOffsetMinutes(guestTz) - tzOffsetMinutes(authorTz));
 
   $('topclock-label').textContent = CONFIG.place.label;
-  $('topclock').title = `время автора, ${CONFIG.place.tzLabel}`;
-}
-
-/** Насколько часы гостя убежали вперёд относительно моих. */
-function diffText(min) {
-  if (min === 0) return 'совпадает';
-  const ahead = min > 0;
-  const abs = Math.abs(min);
-  const h = Math.floor(abs / 60);
-  const m = abs % 60;
-  const parts = [];
-  if (h) parts.push(`${h} ${plural(h, 'час', 'часа', 'часов')}`);
-  if (m) parts.push(`${m} мин`);
-  return `${ahead ? '+' : '−'}${parts.join(' ')}`;
+  $('topclock').title = `${CONFIG.place.label}, ${CONFIG.place.tzLabel}`;
 }
 
 /* ============================= погода ============================= */
 
-// Коды WMO, которые отдаёт Open-Meteo.
-const WMO = {
-  0: 'ясно', 1: 'почти ясно', 2: 'переменная облачность', 3: 'пасмурно',
-  45: 'туман', 48: 'изморозь',
-  51: 'морось', 53: 'морось', 55: 'сильная морось',
-  56: 'ледяная морось', 57: 'ледяная морось',
-  61: 'небольшой дождь', 63: 'дождь', 65: 'ливень',
-  66: 'ледяной дождь', 67: 'ледяной дождь',
-  71: 'небольшой снег', 73: 'снег', 75: 'сильный снег', 77: 'снежные зёрна',
-  80: 'ливень', 81: 'ливень', 82: 'сильный ливень',
-  85: 'снегопад', 86: 'сильный снегопад',
-  95: 'гроза', 96: 'гроза с градом', 99: 'гроза с градом',
-};
-
 function windDir(deg) {
-  const dirs = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
-  return dirs[Math.round(deg / 45) % 8];
+  return T.compass[Math.round(deg / 45) % 8];
 }
 
 // Часовой пояс выбранного города. Приезжает вместе с погодой и нужен солнцу,
@@ -314,12 +338,13 @@ async function loadWeather({ lat, lon }) {
     startLocalClock();
 
     $('wx-temp').textContent = `${Math.round(c.temperature_2m)}°`;
-    $('wx-desc').textContent = WMO[c.weather_code] ?? 'погода';
+    $('wx-desc').textContent = T.wmo[c.weather_code] ?? T.weather;
     $('wx-feels').textContent = `${Math.round(c.apparent_temperature)}°`;
-    $('wx-wind').textContent = `${c.wind_speed_10m.toFixed(1)} м/с ${windDir(c.wind_direction_10m)}`;
+    $('wx-wind').textContent =
+      `${c.wind_speed_10m.toFixed(1)} ${T.wind_units} ${windDir(c.wind_direction_10m)}`;
     $('wx-hum').textContent = `${c.relative_humidity_2m}%`;
   } catch {
-    $('wx-desc').textContent = 'недоступна';
+    $('wx-desc').textContent = T.weather_failed;
   }
 }
 
@@ -328,7 +353,7 @@ let localClockTimer = null;
 function startLocalClock() {
   clearInterval(localClockTimer);
   if (!cityTz) return;
-  const fmt = new Intl.DateTimeFormat('ru-RU', {
+  const fmt = new Intl.DateTimeFormat(T.locale, {
     timeZone: cityTz, hour: '2-digit', minute: '2-digit', hour12: false,
   });
   const tick = () => { $('wx-local').textContent = fmt.format(new Date()); };
@@ -360,31 +385,6 @@ function initCityPicker() {
     else close();
   });
 
-  // Точное место — только по явному клику и только в браузере посетителя.
-  const geo = $('city-geo');
-  if (!navigator.geolocation) {
-    geo.remove();
-  } else {
-    geo.addEventListener('click', () => {
-      geo.textContent = 'определяю…';
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          // Округляем до километра: точные координаты человека уходить наружу не должны.
-          setCity({
-            name: 'моё место',
-            country: '',
-            lat: Math.round(pos.coords.latitude * 100) / 100,
-            lon: Math.round(pos.coords.longitude * 100) / 100,
-          }, true, 'geo');
-          geo.textContent = 'определить точно';
-          close();
-        },
-        () => { geo.textContent = 'не вышло, выбери вручную'; },
-        { timeout: 10000, maximumAge: 600000 }
-      );
-    });
-  }
-
   input.addEventListener('input', () => {
     clearTimeout(timer);
     const q = input.value.trim();
@@ -404,9 +404,34 @@ function initCityPicker() {
     if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) close();
   });
 
+  // Точное место — только по явному клику и только в браузере посетителя.
+  const geo = $('city-geo');
+  if (!navigator.geolocation) {
+    geo.remove();
+  } else {
+    geo.addEventListener('click', () => {
+      geo.textContent = T.city_detecting;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          // Округляем до километра: точные координаты человека уходить наружу не должны.
+          setCity({
+            name: lang === 'ru' ? 'моё место' : 'my place',
+            country: '',
+            lat: Math.round(pos.coords.latitude * 100) / 100,
+            lon: Math.round(pos.coords.longitude * 100) / 100,
+          }, true, 'geo');
+          geo.textContent = T.city_detect;
+          close();
+        },
+        () => { geo.textContent = T.city_detect_failed; },
+        { timeout: 10000, maximumAge: 600000 }
+      );
+    });
+  }
+
   async function search(q) {
-    const url = 'https://geocoding-api.open-meteo.com/v1/search?count=6&language=ru&format=json' +
-      `&name=${encodeURIComponent(q)}`;
+    const url = `https://geocoding-api.open-meteo.com/v1/search?count=6&language=${lang}` +
+      `&format=json&name=${encodeURIComponent(q)}`;
     let found = [];
     try {
       const r = await fetch(url);
@@ -414,7 +439,7 @@ function initCityPicker() {
     } catch { /* сеть подвела, покажем пустой список */ }
 
     if (!found.length) {
-      results.innerHTML = '<li class="city-empty">ничего не нашлось</li>';
+      results.innerHTML = `<li class="city-empty">${T.city_empty}</li>`;
       return;
     }
 
@@ -448,24 +473,27 @@ function initCityPicker() {
 function initSun() {
   const draw = () => {
     // Время восхода показываем по часам того города, который выбран.
-    const hm = new Intl.DateTimeFormat('ru-RU', {
+    const hm = new Intl.DateTimeFormat(T.locale, {
       ...(cityTz ? { timeZone: cityTz } : {}),
       hour: '2-digit', minute: '2-digit', hour12: false,
     });
+
     const { lat, lon } = city;
     const now = new Date();
     const alt = sunAltitude(now, lat, lon);
     const { rise, set } = sunTimes(now, lat, lon);
 
     $('sun-altitude').textContent = alt.toFixed(1);
-    $('sun-phase').textContent = alt > 0 ? 'день' : alt > -6 ? 'сумерки' : 'ночь';
-    $('sun-altitude').title = `пик сегодня: ${noonAltitude(now, lat, lon).toFixed(1)}°`;
+    $('sun-phase').textContent = alt > 0 ? T.phase_day : alt > -6 ? T.phase_twilight : T.phase_night;
+    $('sun-altitude').title = `${T.sun_peak}: ${noonAltitude(now, lat, lon).toFixed(1)}°`;
 
     if (rise && set) {
       $('sun-rise').textContent = hm.format(rise);
       $('sun-set').textContent = hm.format(set);
       const mins = Math.round((set - rise) / 60000);
-      $('sun-len').textContent = `${Math.floor(mins / 60)} ч ${pad(mins % 60)} м`;
+      const hourMark = lang === 'ru' ? 'ч' : 'h';
+      const minMark = lang === 'ru' ? 'м' : 'm';
+      $('sun-len').textContent = `${Math.floor(mins / 60)} ${hourMark} ${pad(mins % 60)} ${minMark}`;
 
       // Точка едет по дуге: 0 на восходе, 1 на закате.
       let t = (now - rise) / (set - rise);
@@ -480,7 +508,7 @@ function initSun() {
     } else {
       $('sun-rise').textContent = '—';
       $('sun-set').textContent = '—';
-      $('sun-len').textContent = alt > 0 ? 'полярный день' : 'полярная ночь';
+      $('sun-len').textContent = alt > 0 ? T.polar_day : T.polar_night;
     }
   };
 
@@ -537,10 +565,11 @@ async function initSats() {
   };
 
   const passIn = (m) => {
-    if (m === null) return 'не в ближайшие 8 часов';
-    if (m < 60) return `через ${m} ${plural(m, 'минуту', 'минуты', 'минут')}`;
+    if (m === null) return T.sats_never;
+    if (m < 60) return `${T.sats_in} ${m} ${plural(m, 'minute')}`;
     const h = Math.floor(m / 60);
-    return `через ${h} ${plural(h, 'час', 'часа', 'часов')} ${m % 60} мин`;
+    const minMark = lang === 'ru' ? 'мин' : 'min';
+    return `${T.sats_in} ${h} ${plural(h, 'hour')} ${m % 60} ${minMark}`;
   };
 
   // Пролёты считаются дороже позиций, поэтому реже: раз в минуту и при смене города.
@@ -569,10 +598,9 @@ async function initSats() {
       rows.push({
         name,
         group,
-        elevation: look.elevation / rad,       // высота над горизонтом, градусы
-        azimuth: look.azimuth / rad,           // азимут, градусы от севера
-        range: look.rangeSat,                  // расстояние до наблюдателя, км
-        height: geo.height,                    // высота орбиты, км
+        elevation: look.elevation / rad,        // высота над горизонтом, градусы
+        azimuth: look.azimuth / rad,            // азимут, градусы от севера
+        height: geo.height,                     // высота орбиты, км
         speed: Math.hypot(v.x, v.y, v.z) * 3600, // км/ч
       });
     }
@@ -585,8 +613,8 @@ async function initSats() {
     rows.length = 0;
     rows.push(...visible, ...hidden);
 
-    // Падежи городов не склоняем: город выносим отдельной строкой под списком.
-    $('sats-summary').textContent = `видно ${visible.length} из ${rows.length}`;
+    $('sats-summary').textContent =
+      `${T.sats_visible} ${visible.length} ${T.sats_of} ${recs.length}`;
 
     // Небо сверху: центр — зенит, край круга — горизонт.
     // Подписываем только пять самых высоких, иначе имена налезают друг на друга.
@@ -604,24 +632,25 @@ async function initSats() {
 
     // Пустое небо без пояснения выглядит как поломка.
     if (!visible.length) {
-      $('sky-dots').innerHTML =
-        '<text class="sky-empty" x="0" y="4">сейчас никого</text>';
+      $('sky-dots').innerHTML = `<text class="sky-empty" x="0" y="4">${T.sats_empty}</text>`;
     }
 
     // Длинный список утомляет: показываем видимых и ближайших, остальных под кнопкой.
     const shown = expanded ? rows : rows.slice(0, Math.max(visible.length + 4, 6));
+    const kmh = lang === 'ru' ? 'км/ч' : 'km/h';
+    const km = lang === 'ru' ? 'км' : 'km';
 
     $('sats').innerHTML = shown
       .map((r) => {
         const up = r.elevation > 0;
         const when = up
-          ? `${r.elevation.toFixed(0)}° над горизонтом`
+          ? `${r.elevation.toFixed(0)}${T.sats_above}`
           : passIn(passes.get(r.name) ?? null);
         return `<li class="sat ${up ? 'sat--up' : ''}">
           <span class="sat-name">${escapeHTML(r.name)}</span>
           <span class="sat-el">${when}</span>
           <span class="sat-group">${escapeHTML(r.group)}</span>
-          <span class="sat-num">${Math.round(r.height)} км · ${Math.round(r.speed).toLocaleString('ru-RU')} км/ч</span>
+          <span class="sat-num">${Math.round(r.height)} ${km} · ${Math.round(r.speed).toLocaleString(T.locale)} ${kmh}</span>
         </li>`;
       })
       .join('');
@@ -630,11 +659,11 @@ async function initSats() {
     const more = $('sats-more');
     more.hidden = rest <= 0 && !expanded;
     more.textContent = expanded
-      ? 'свернуть'
-      : `показать ещё ${rest} ${plural(rest, 'спутник', 'спутника', 'спутников')}`;
+      ? T.sats_less
+      : `${T.sats_more} ${rest} ${plural(rest, 'sat')}`;
 
     $('sats-note').textContent =
-      `точка наблюдения: ${city.name} · орбиты обновлены ${ago(data.updated_at)}`;
+      `${T.sats_observer}: ${city.name} · ${T.sats_orbits} ${ago(data.updated_at)}`;
   };
 
   let expanded = false;
@@ -677,7 +706,7 @@ async function initGitHub() {
   }
 
   if (!data) {
-    $('gh-graph').innerHTML = '<span class="card-note">github недоступен</span>';
+    $('gh-graph').innerHTML = `<span class="card-note">${T.gh_unavailable}</span>`;
     return;
   }
 
@@ -701,8 +730,7 @@ function renderGraph(calendar) {
   box.innerHTML = calendar
     .map((d) => {
       const lvl = d.count === 0 ? 0 : Math.min(4, Math.ceil((d.count / max) * 4));
-      const word = plural(d.count, 'контрибуция', 'контрибуции', 'контрибуций');
-      return `<i class="gh-cell" data-lvl="${lvl}" title="${d.date}: ${d.count} ${word}"></i>`;
+      return `<i class="gh-cell" data-lvl="${lvl}" title="${d.date}: ${d.count} ${plural(d.count, 'contribution')}"></i>`;
     })
     .join('');
 }
@@ -717,7 +745,7 @@ function renderCommits(commits) {
     .slice(0, 5)
     .map(
       (c) => `<li><a class="commit" href="${c.url}" target="_blank" rel="noopener">
-        <span class="commit-repo">${c.repo}</span>
+        <span class="commit-repo">${escapeHTML(c.repo)}</span>
         <span class="commit-msg">${escapeHTML(c.message)}</span>
         <span class="commit-when">${ago(c.date)}</span>
       </a></li>`
@@ -737,8 +765,8 @@ function renderProjects(repos) {
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     .slice(0, CONFIG.recentCount);
 
-  const word = plural(recent.length, 'репозиторий', 'репозитория', 'репозиториев');
-  $('projects-title').textContent = `последние ${recent.length} ${word}`;
+  $('projects-title').textContent =
+    `${T.projects_recent} ${recent.length} ${plural(recent.length, 'repo')}`;
 
   box.innerHTML = recent
     .map(
@@ -747,9 +775,9 @@ function renderProjects(repos) {
           <span class="project-name">${escapeHTML(r.name)}</span>
           ${r.stars ? `<span class="project-stars">★ ${r.stars}</span>` : ''}
         </span>
-        <p class="project-desc">${escapeHTML(r.description || 'без описания')}</p>
+        <p class="project-desc">${escapeHTML(r.description || T.no_description)}</p>
         <span class="project-foot">
-          ${r.language ? `<span class="project-lang"><i class="lang-dot"></i>${r.language}</span>` : '<span></span>'}
+          ${r.language ? `<span class="project-lang"><i class="lang-dot"></i>${escapeHTML(r.language)}</span>` : '<span></span>'}
           <span class="project-when">${r.updated_at ? ago(r.updated_at) : ''}</span>
         </span>
       </a></li>`
@@ -759,34 +787,31 @@ function renderProjects(repos) {
 
 /* ============================== главное ============================== */
 
-const PIN_STATUS = {
-  live:   { label: 'работает',  cls: 'pin--live' },
-  wip:    { label: 'в работе',  cls: 'pin--wip' },
-  paused: { label: 'заморожен', cls: 'pin--paused' },
-};
-
 function renderPinned() {
-  const box = $('pinned');
   const items = CONFIG.pinned || [];
-
   if (!items.length) {
     $('card-pinned').remove();
     return;
   }
 
-  $('pinned-count').textContent =
-    `${items.length} ${plural(items.length, 'проект', 'проекта', 'проектов')}`;
+  const statuses = {
+    live: { label: T.status_live, cls: 'pin--live' },
+    wip: { label: T.status_wip, cls: 'pin--wip' },
+    paused: { label: T.status_paused, cls: 'pin--paused' },
+  };
 
-  box.innerHTML = items
+  $('pinned-count').textContent = `${items.length} ${plural(items.length, 'project')}`;
+
+  $('pinned').innerHTML = items
     .map((p) => {
-      const st = PIN_STATUS[p.status] || PIN_STATUS.live;
+      const st = statuses[p.status] || statuses.live;
       const inner = `
         <span class="pin-top">
-          <span class="pin-name">${escapeHTML(p.name)}</span>
+          <span class="pin-name">${escapeHTML(L(p.name))}</span>
           <span class="pin-status ${st.cls}"><i></i>${st.label}</span>
         </span>
-        <p class="pin-desc">${escapeHTML(p.description || '')}</p>
-        ${p.tag ? `<span class="pin-tag">${escapeHTML(p.tag)}</span>` : ''}`;
+        <p class="pin-desc">${escapeHTML(L(p.description))}</p>
+        ${p.tag ? `<span class="pin-tag">${escapeHTML(L(p.tag))}</span>` : ''}`;
 
       // Проект может быть без ссылки: тогда это просто карточка.
       return p.href
@@ -806,16 +831,18 @@ function renderDoing() {
   }
 
   // Дата обновления важнее самого текста: по ней видно, живая страница или брошенная.
-  $('now-updated').textContent = now.updated ? `обновлено ${agoDays(now.updated)}` : '';
+  $('now-updated').textContent = now.updated ? `${T.updated} ${agoDays(now.updated)}` : '';
 
   $('doing').innerHTML = now.lines
     .map((line) => {
-      // Строка может быть просто текстом или объектом с зачёркиванием.
-      const item = typeof line === 'string' ? { text: line } : line;
+      // Строка может быть текстом, объектом с переводами или объектом с зачёркиванием.
+      const isEntry = line && typeof line === 'object' && ('text' in line || 'strike' in line);
+      const item = isEntry ? line : { text: line };
+
       const cls = item.strike ? 'doing-item doing-item--done' : 'doing-item';
-      const note = item.note ? ` <span class="doing-note">(${escapeHTML(item.note)})</span>` : '';
+      const note = item.note ? ` <span class="doing-note">(${escapeHTML(L(item.note))})</span>` : '';
       return `<li class="${cls}">
-        <span class="doing-text">${escapeHTML(item.text)}</span>${note}
+        <span class="doing-text">${escapeHTML(L(item.text))}</span>${note}
       </li>`;
     })
     .join('');
@@ -835,18 +862,16 @@ function renderStack() {
   $('stack').innerHTML = items
     .map((s) => {
       const lvl = Math.min(3, Math.max(1, s.level || 1));
-      const bars = [1, 2, 3]
-        .map((i) => `<i class="${i <= lvl ? 'on' : ''}"></i>`)
-        .join('');
+      const bars = [1, 2, 3].map((i) => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('');
 
       // Первый год работы с языком считается за год, а не за ноль.
       const years = s.since ? Math.max(1, thisYear - s.since) : null;
-      const stage = years ? `${years} ${plural(years, 'год', 'года', 'лет')}` : '';
+      const stage = years ? `${years} ${plural(years, 'year')}` : '';
 
       return `<li class="skill">
-        <span class="skill-name">${escapeHTML(s.name)}</span>
+        <span class="skill-name">${escapeHTML(L(s.name))}</span>
         <span class="skill-years">${stage}</span>
-        <span class="skill-bars" aria-label="уровень ${lvl} из 3">${bars}</span>
+        <span class="skill-bars" aria-label="${lvl}/3">${bars}</span>
       </li>`;
     })
     .join('');
@@ -856,7 +881,6 @@ function renderStack() {
 
 async function initInfra() {
   const data = await loadJSON('data/infra.json');
-  const box = $('infra-nodes');
 
   if (!data || !Array.isArray(data.nodes) || !data.nodes.length) {
     $('card-infra').remove();
@@ -864,20 +888,20 @@ async function initInfra() {
   }
 
   const up = data.nodes.filter((n) => n.up).length;
-  $('infra-summary').textContent = `${up}/${data.nodes.length} онлайн`;
+  $('infra-summary').textContent = `${up}/${data.nodes.length} ${T.infra_online}`;
 
-  box.innerHTML = data.nodes
+  $('infra-nodes').innerHTML = data.nodes
     .map(
       (n) => `<li class="node ${n.up ? 'node--up' : 'node--down'}">
         <i class="node-led"></i>
         <span class="node-name">${escapeHTML(n.name)}</span>
         <span class="node-role">${escapeHTML(n.role || '')}</span>
-        <span class="node-ping">${n.up ? `${n.ms} ms` : 'нет ответа'}</span>
+        <span class="node-ping">${n.up ? `${n.ms} ms` : T.infra_down}</span>
       </li>`
     )
     .join('');
 
-  $('infra-checked').textContent = `проверено ${ago(data.checked_at)}`;
+  $('infra-checked').textContent = `${T.infra_checked} ${ago(data.checked_at)}`;
 }
 
 /* ============================== музыка ============================== */
@@ -890,7 +914,7 @@ async function initMusic() {
   $('track-name').textContent = data.now.name;
   $('track-artist').textContent = data.now.artist;
   if (data.now.art) $('track-art').style.backgroundImage = `url("${data.now.art}")`;
-  $('music-source').textContent = data.now.playing ? 'играет сейчас' : 'последний трек';
+  $('music-source').textContent = data.now.playing ? T.music_now : T.music_last;
 
   if (Array.isArray(data.recent) && data.recent.length) {
     $('scrobbles').innerHTML = data.recent
@@ -909,28 +933,30 @@ async function initMusic() {
 
 function initLinks() {
   // Пункты без значения ещё не заполнены — на странице их быть не должно.
-  const filled = (CONFIG.contacts || []).filter((c) => c.value && c.value.trim());
+  const filled = (CONFIG.contacts || []).filter((c) => L(c.value).trim());
   const groups = [...new Set(filled.map((c) => c.group))];
+  const groupTitle = { message: T.contacts_message, find: T.contacts_find };
 
   $('links').innerHTML = groups
     .map((g) => {
       const rows = filled
         .filter((c) => c.group === g)
         .map((c) => {
+          const value = L(c.value);
           const inner = `
-            <span class="link-label">${escapeHTML(c.label)}</span>
-            <span class="link-value">${escapeHTML(c.value)}</span>
-            ${c.note ? `<span class="link-note">${escapeHTML(c.note)}</span>` : ''}`;
+            <span class="link-label">${escapeHTML(L(c.label))}</span>
+            <span class="link-value">${escapeHTML(value)}</span>
+            ${c.note ? `<span class="link-note">${escapeHTML(L(c.note))}</span>` : ''}`;
 
           // Есть ссылка — ведём наружу. Нет — отдаём в буфер обмена.
           return c.href
             ? `<li><a class="link-row" href="${c.href}" target="_blank" rel="noopener me">${inner}
                  <span class="link-act">↗</span></a></li>`
-            : `<li><button class="link-row" type="button" data-copy="${escapeHTML(c.value)}">${inner}
-                 <span class="link-act">копировать</span></button></li>`;
+            : `<li><button class="link-row" type="button" data-copy="${escapeHTML(value)}">${inner}
+                 <span class="link-act">${T.copy}</span></button></li>`;
         })
         .join('');
-      return `<li class="link-group"><span class="link-group-title">${escapeHTML(g)}</span>
+      return `<li class="link-group"><span class="link-group-title">${escapeHTML(groupTitle[g] || g)}</span>
                 <ul class="link-list">${rows}</ul></li>`;
     })
     .join('');
@@ -940,13 +966,13 @@ function initLinks() {
   const ring = CONFIG.webring;
   $('webring').innerHTML =
     '<span>←</span>' +
-    `<a href="${ring[0]?.href || '#'}" rel="noopener">${ring[0]?.label || '—'}</a>` +
-    `<span class="ring-self">${CONFIG.nick}</span>` +
-    `<a href="${ring[1]?.href || '#'}" rel="noopener">${ring[1]?.label || '—'}</a>` +
+    `<a href="${ring[0]?.href || '#'}" rel="noopener">${escapeHTML(ring[0]?.label || '—')}</a>` +
+    `<span class="ring-self">${escapeHTML(CONFIG.nick)}</span>` +
+    `<a href="${ring[1]?.href || '#'}" rel="noopener">${escapeHTML(ring[1]?.label || '—')}</a>` +
     '<span>→</span>';
 
   $('year').textContent = new Date().getFullYear();
-  $('hero-sub').textContent = CONFIG.tagline;
+  $('hero-sub').textContent = L(CONFIG.tagline);
 
   // Ссылки на профиль берём из конфига, чтобы ник менялся в одном месте.
   document.querySelectorAll('[data-gh-profile]').forEach((a) => {
@@ -962,17 +988,19 @@ function initCopy() {
       const act = btn.querySelector('.link-act');
       try {
         await navigator.clipboard.writeText(btn.dataset.copy);
-        act.textContent = 'скопировано';
+        act.textContent = T.copied;
       } catch {
-        act.textContent = 'не вышло';
+        act.textContent = T.copy_failed;
       }
-      setTimeout(() => { act.textContent = 'копировать'; }, 1600);
+      setTimeout(() => { act.textContent = T.copy; }, 1600);
     });
   });
 }
 
 /* ============================== запуск ============================== */
 
+initLangSwitch();
+applyStatic();
 initTheme();
 initRotator();
 initClock();
@@ -983,8 +1011,9 @@ renderDoing();
 renderStack();
 initLinks();
 
-$('city-name').textContent = cityChosen ? city.name : 'определяю…';
-$('wx-who').textContent = cityChosen ? WHO.manual : '';
+$('city-name').textContent = cityChosen ? city.name : T.city_detecting;
+$('wx-who').textContent = cityChosen ? T.who_manual : '';
+$('wx-desc').textContent = T.weather_loading;
 loadWeather(city);
 onCityChange(loadWeather);
 
@@ -995,7 +1024,7 @@ if (!cityChosen) {
       setCity(found, false, 'auto');
     } else {
       $('city-name').textContent = city.name;
-      $('wx-who').textContent = WHO.default;
+      $('wx-who').textContent = T.who_default;
     }
   });
 }
@@ -1006,5 +1035,5 @@ initInfra();
 initMusic();
 
 loadJSON('data/meta.json').then((m) => {
-  $('build-stamp').textContent = m?.built_at ? `данные: ${ago(m.built_at)}` : 'статика';
+  $('build-stamp').textContent = m?.built_at ? `${T.data_from}: ${ago(m.built_at)}` : T.data_static;
 });

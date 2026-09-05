@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>villcreat</title>
-<meta name="description" content="villcreat — личная страница, живые данные, self-hosted инфраструктура.">
+<meta name="description" content="villcreat — личная страница с живыми данными.">
 <meta property="og:title" content="villcreat">
 <meta property="og:description" content="Личная страница с живыми данными.">
 <meta property="og:type" content="profile">
@@ -26,14 +26,19 @@
     <span class="brand-mark" aria-hidden="true"></span>
     <span class="brand-name">villcreat</span>
   </a>
+
   <nav class="topnav">
-    <a href="blog.html">блог</a>
-    <a href="feed.xml">rss</a>
+    <a id="nav-blog" href="blog.html" data-i18n="nav_blog">блог</a>
+    <a id="nav-feed" href="feed.xml">rss</a>
   </nav>
+
   <div class="topclock" id="topclock">
     <span class="topclock-label" id="topclock-label">—</span>
     <span class="topclock-time" id="author-time">--:--</span>
   </div>
+
+  <div class="langs" id="langs" role="group" aria-label="Язык"></div>
+
   <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
     <span class="theme-dot" aria-hidden="true"></span>
     <span id="theme-label">dark</span>
@@ -46,10 +51,10 @@
   <section class="hero">
     <h1 class="hero-name">villcreat</h1>
     <p class="hero-line">
-      is currently
+      <span data-i18n="is_currently">is currently</span>
       <span class="rotator" id="rotator" aria-live="polite"><span class="rotator-word">building</span></span>
     </p>
-    <p class="hero-sub" id="hero-sub">self-hosted всё подряд</p>
+    <p class="hero-sub" id="hero-sub"></p>
   </section>
 
   <div class="grid">
@@ -57,7 +62,7 @@
     <!-- ВРЕМЯ -->
     <section class="card" id="card-now">
       <div class="card-head">
-        <span class="card-title">сейчас у вас</span>
+        <span class="card-title" data-i18n="now_title">сейчас у вас</span>
         <span class="chip" id="now-place">—</span>
       </div>
       <div class="clock" id="clock">
@@ -65,16 +70,16 @@
       </div>
       <div class="now-date" id="now-date">—</div>
       <dl class="kv kv--row">
-        <div><dt>ваша зона</dt><dd id="now-tz">—</dd></div>
-        <div><dt>у меня</dt><dd id="now-mine">—</dd></div>
-        <div><dt>разница</dt><dd id="now-diff">—</dd></div>
+        <div><dt data-i18n="now_zone">ваша зона</dt><dd id="now-tz">—</dd></div>
+        <div><dt data-i18n="now_mine">у меня</dt><dd id="now-mine">—</dd></div>
+        <div><dt data-i18n="now_diff">разница</dt><dd id="now-diff">—</dd></div>
       </dl>
     </section>
 
     <!-- ПОГОДА -->
     <section class="card" id="card-weather">
       <div class="card-head">
-        <span class="card-title">погода</span>
+        <span class="card-title" data-i18n="weather">погода</span>
         <button class="chip chip--btn" id="city-btn" type="button" aria-expanded="false">
           <span id="city-name">—</span>
           <span class="chip-caret" aria-hidden="true">▾</span>
@@ -82,21 +87,20 @@
       </div>
 
       <div class="city-picker" id="city-picker" hidden>
-        <input class="city-input" id="city-input" type="search" autocomplete="off"
-               placeholder="город: Токио, Лима, Мурманск…" aria-label="Поиск города">
-        <button class="city-geo" id="city-geo" type="button">определить точно</button>
+        <input class="city-input" id="city-input" type="search" autocomplete="off">
+        <button class="city-geo" id="city-geo" type="button" data-i18n="city_detect">определить точно</button>
         <ul class="city-results" id="city-results"></ul>
       </div>
 
       <div class="metric">
         <span class="metric-value" id="wx-temp">—</span>
-        <span class="metric-label" id="wx-desc">грузится</span>
+        <span class="metric-label" id="wx-desc">—</span>
       </div>
       <dl class="kv kv--row kv--four">
-        <div><dt>ощущается</dt><dd id="wx-feels">—</dd></div>
-        <div><dt>ветер</dt><dd id="wx-wind">—</dd></div>
-        <div><dt>влажность</dt><dd id="wx-hum">—</dd></div>
-        <div><dt>там сейчас</dt><dd id="wx-local">—</dd></div>
+        <div><dt data-i18n="feels">ощущается</dt><dd id="wx-feels">—</dd></div>
+        <div><dt data-i18n="wind">ветер</dt><dd id="wx-wind">—</dd></div>
+        <div><dt data-i18n="humidity">влажность</dt><dd id="wx-hum">—</dd></div>
+        <div><dt data-i18n="local_time">там сейчас</dt><dd id="wx-local">—</dd></div>
       </dl>
       <p class="card-note" id="wx-who">—</p>
     </section>
@@ -104,11 +108,13 @@
     <!-- СОЛНЦЕ -->
     <section class="card" id="card-sun">
       <div class="card-head">
-        <span class="card-title">солнце</span>
+        <span class="card-title" data-i18n="sun">солнце</span>
         <span class="chip" id="sun-phase">—</span>
       </div>
-      <div class="sun-alt"><span id="sun-altitude">—</span><span class="unit">° над горизонтом</span></div>
-      <div class="sun-track" role="img" aria-label="Дуга движения солнца">
+      <div class="sun-alt">
+        <span id="sun-altitude">—</span><span class="unit" data-i18n="sun_above">° над горизонтом</span>
+      </div>
+      <div class="sun-track">
         <svg viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
           <path class="sun-horizon" d="M0 78 H300"/>
           <path class="sun-arc" id="sun-arc" d="M10 78 Q150 -6 290 78"/>
@@ -116,16 +122,16 @@
         </svg>
       </div>
       <dl class="kv kv--row">
-        <div><dt>восход</dt><dd id="sun-rise">—</dd></div>
-        <div><dt>закат</dt><dd id="sun-set">—</dd></div>
-        <div><dt>светло</dt><dd id="sun-len">—</dd></div>
+        <div><dt data-i18n="sunrise">восход</dt><dd id="sun-rise">—</dd></div>
+        <div><dt data-i18n="sunset">закат</dt><dd id="sun-set">—</dd></div>
+        <div><dt data-i18n="daylight">светло</dt><dd id="sun-len">—</dd></div>
       </dl>
     </section>
 
     <!-- ЧЕМ ЗАНЯТ -->
     <section class="card card--wide" id="card-now-doing">
       <div class="card-head">
-        <span class="card-title">чем занят</span>
+        <span class="card-title" data-i18n="doing">чем занят</span>
         <span class="chip" id="now-updated">—</span>
       </div>
       <ul class="doing" id="doing"></ul>
@@ -134,35 +140,41 @@
     <!-- GITHUB -->
     <section class="card card--wide" id="card-gh">
       <div class="card-head">
-        <span class="card-title">github</span>
+        <span class="card-title" data-i18n="github">github</span>
         <a class="chip chip--link" data-gh-profile="" data-gh-label="nick" href="https://github.com/villcreat" target="_blank" rel="noopener">@villcreat</a>
       </div>
-      <div class="gh-graph" id="gh-graph" role="img" aria-label="График контрибуций за год"></div>
+      <div class="gh-graph" id="gh-graph"></div>
       <div class="gh-stats">
-        <div class="stat"><b id="gh-contrib">—</b><span>контрибуций/год</span></div>
-        <div class="stat"><b id="gh-streak">—</b><span>дней подряд</span></div>
-        <div class="stat"><b id="gh-repos">—</b><span>репозиториев</span></div>
-        <div class="stat"><b id="gh-followers">—</b><span>подписчиков</span></div>
+        <div class="stat"><b id="gh-contrib">—</b><span data-i18n="gh_contrib">контрибуций/год</span></div>
+        <div class="stat"><b id="gh-streak">—</b><span data-i18n="gh_streak">дней подряд</span></div>
+        <div class="stat"><b id="gh-repos">—</b><span data-i18n="gh_repos">репозиториев</span></div>
+        <div class="stat"><b id="gh-followers">—</b><span data-i18n="gh_followers">подписчиков</span></div>
       </div>
       <ul class="commits" id="gh-commits"></ul>
+    </section>
+
+    <!-- СТЕК -->
+    <section class="card" id="card-stack">
+      <div class="card-head">
+        <span class="card-title" data-i18n="stack">стек</span>
+      </div>
+      <ul class="stack" id="stack"></ul>
     </section>
 
     <!-- СЕРВЕРЫ -->
     <section class="card" id="card-infra">
       <div class="card-head">
-        <span class="card-title">инфраструктура</span>
+        <span class="card-title" data-i18n="infra">инфраструктура</span>
         <span class="chip" id="infra-summary">—</span>
       </div>
-      <ul class="nodes" id="infra-nodes">
-        <li class="node node--skeleton"><span class="node-name">проверка…</span></li>
-      </ul>
+      <ul class="nodes" id="infra-nodes"></ul>
       <p class="card-note" id="infra-checked">—</p>
     </section>
 
     <!-- МУЗЫКА -->
     <section class="card" id="card-music" hidden>
       <div class="card-head">
-        <span class="card-title">играет</span>
+        <span class="card-title" data-i18n="music">играет</span>
         <span class="chip" id="music-source">last.fm</span>
       </div>
       <div class="track" id="track">
@@ -178,7 +190,7 @@
     <!-- ГЛАВНОЕ -->
     <section class="card card--wide" id="card-pinned">
       <div class="card-head">
-        <span class="card-title">главное</span>
+        <span class="card-title" data-i18n="featured">главное</span>
         <span class="chip" id="pinned-count">—</span>
       </div>
       <ul class="pins" id="pinned"></ul>
@@ -187,37 +199,29 @@
     <!-- ПОСЛЕДНИЕ РЕПОЗИТОРИИ -->
     <section class="card card--wide" id="card-projects">
       <div class="card-head">
-        <span class="card-title" id="projects-title">последние репозитории</span>
-        <a class="chip chip--link" data-gh-profile="?tab=repositories" href="https://github.com/villcreat?tab=repositories" target="_blank" rel="noopener">все репозитории</a>
+        <span class="card-title" id="projects-title">—</span>
+        <a class="chip chip--link" data-gh-profile="?tab=repositories" data-i18n="projects_all" href="https://github.com/villcreat?tab=repositories" target="_blank" rel="noopener">все репозитории</a>
       </div>
       <ul class="projects" id="projects"></ul>
-    </section>
-
-    <!-- СТЕК -->
-    <section class="card" id="card-stack">
-      <div class="card-head">
-        <span class="card-title">стек</span>
-      </div>
-      <ul class="stack" id="stack"></ul>
     </section>
 
     <!-- СПУТНИКИ -->
     <section class="card card--wide" id="card-sats">
       <div class="card-head">
-        <span class="card-title">над головой</span>
+        <span class="card-title" data-i18n="sats">над головой</span>
         <span class="chip" id="sats-summary">—</span>
       </div>
       <div class="sky-wrap">
-        <div class="sky" role="img" aria-label="Небо над выбранным городом, вид сверху">
+        <div class="sky">
           <svg viewBox="-110 -110 220 220" aria-hidden="true">
             <circle class="sky-ring" r="100"/>
             <circle class="sky-ring sky-ring--mid" r="50"/>
             <line class="sky-cross" x1="-100" y1="0" x2="100" y2="0"/>
             <line class="sky-cross" x1="0" y1="-100" x2="0" y2="100"/>
-            <text class="sky-label" x="0" y="-104">С</text>
-            <text class="sky-label" x="106" y="4">В</text>
-            <text class="sky-label" x="0" y="112">Ю</text>
-            <text class="sky-label" x="-106" y="4">З</text>
+            <text class="sky-label" id="sky-n" x="0" y="-104">С</text>
+            <text class="sky-label" id="sky-e" x="106" y="4">В</text>
+            <text class="sky-label" id="sky-s" x="0" y="112">Ю</text>
+            <text class="sky-label" id="sky-w" x="-106" y="4">З</text>
             <g id="sky-dots"></g>
           </svg>
         </div>
@@ -231,7 +235,7 @@
 
     <!-- КОНТАКТЫ -->
     <section class="card card--wide" id="card-links">
-      <div class="card-head"><span class="card-title">связь</span></div>
+      <div class="card-head"><span class="card-title" id="links-title">—</span></div>
       <ul class="links" id="links"></ul>
     </section>
 

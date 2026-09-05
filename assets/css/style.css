@@ -58,6 +58,7 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
+  overflow-x: hidden; /* шапка на узких экранах не должна тянуть страницу вбок */
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -120,10 +121,31 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--mono); font-size: 12px; font-weight: 700;
   color: var(--text-2); font-variant-numeric: tabular-nums;
 }
-@media (max-width: 460px) {
+@media (max-width: 700px) {
   .topclock-label { display: none; }
   .topclock { padding: 5px 10px; }
 }
+/* Совсем узко: часы автора уходят, они дублируются в карточке времени. */
+@media (max-width: 560px) {
+  .topclock { display: none; }
+  .topbar { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .topnav a { padding: 5px 8px; }
+}
+
+/* Переключатель языка */
+.langs {
+  display: inline-flex; gap: 2px; margin-right: 8px;
+  padding: 3px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line-soft);
+}
+.lang {
+  padding: 4px 9px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-3); background: transparent;
+  transition: color .2s, background .2s;
+}
+.lang:hover { color: var(--text); }
+.lang--on { color: var(--bg); background: var(--accent); }
 
 .theme-toggle {
   display: inline-flex; align-items: center; gap: 8px;
@@ -679,6 +701,8 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
   font-family: var(--mono); font-size: 9px; letter-spacing: .08em;
   color: var(--text-3);
 }
+/* Пометка, что перевода этой заметки нет. */
+.tag--muted { border-style: dashed; opacity: .75; }
 
 /* Текст заметки */
 .prose article { font-size: 16px; line-height: 1.75; color: var(--text-2); }

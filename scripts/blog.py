@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
-Собирает блог из posts/*.md.
+Собирает блог из posts/*.md на двух языках.
 
-Каждый пост становится отдельной страницей blog/<slug>.html, плюс
-собираются список blog.html и лента feed.xml. Всё статическое: страница
-поста открывается и читается даже с выключенным JavaScript.
+Имя файла: <дата>-<имя>.<язык>.md, например
+    posts/2026-09-10-perevyoz-servera.ru.md
+    posts/2026-09-10-perevyoz-servera.en.md
+Файл без языка в имени считается русским.
+
+На выходе:
+    blog.html, blog/<имя>.html, feed.xml        — русские
+    blog.en.html, blog/<имя>.en.html, feed.en.xml — английские
+
+Страницы статические: заметка читается без JavaScript. Небольшой скрипт
+на странице только переносит гостя на его язык, если такая версия есть.
 
 Запуск: python scripts/blog.py
 """
@@ -24,11 +32,33 @@ OUT_DIR = ROOT / "blog"
 
 # Адрес нужен только для ленты: в RSS обязаны быть полные ссылки.
 SITE_URL = "https://villcreat.github.io"
-SITE_TITLE = "villcreat"
-SITE_DESC = "Заметки о своих серверах, коде и прочей самодеятельности."
 
-MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
-          "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+LANGS = ("ru", "en")
+
+STR = {
+    "ru": {
+        "site_title": "villcreat",
+        "site_desc": "Заметки о своих серверах, коде и прочей самодеятельности.",
+        "blog": "блог",
+        "home": "главная",
+        "all_posts": "← все заметки",
+        "empty": "Пока пусто. Первая заметка появится здесь.",
+        "no_translation": "только на русском",
+        "months": ["января", "февраля", "марта", "апреля", "мая", "июня",
+                   "июля", "августа", "сентября", "октября", "ноября", "декабря"],
+    },
+    "en": {
+        "site_title": "villcreat",
+        "site_desc": "Notes about my servers, code and other homemade things.",
+        "blog": "blog",
+        "home": "home",
+        "all_posts": "← all posts",
+        "empty": "Nothing here yet. The first post will show up here.",
+        "no_translation": "russian only",
+        "months": ["January", "February", "March", "April", "May", "June",
+                   "July", "August", "September", "October", "November", "December"],
+    },
+}
 
 
 def parse_post(path):
@@ -46,21 +76,26 @@ def parse_post(path):
                     k, v = line.split(":", 1)
                     meta[k.strip().lower()] = v.strip()
 
-    slug = meta.get("slug") or path.stem
-    # Дату можно не писать в заголовке: возьмём из имени файла 2026-09-06-...
-    date = meta.get("date", "")
-    if not date:
-        m = re.match(r"(\d{4}-\d{2}-\d{2})", path.stem)
-        date = m.group(1) if m else ""
-        slug = re.sub(r"^\d{4}-\d{2}-\d{2}-", "", slug)
-    else:
-        slug = re.sub(r"^\d{4}-\d{2}-\d{2}-", "", slug)
-
     if meta.get("draft", "").lower() in ("1", "true", "yes", "да"):
         return None
 
+    stem = path.stem
+    # Язык берётся из имени файла: privet.en -> en, без суффикса -> ru.
+    lang = "ru"
+    m = re.match(r"(.+)\.(ru|en)$", stem)
+    if m:
+        stem, lang = m.group(1), m.group(2)
+
+    date = meta.get("date", "")
+    if not date:
+        m = re.match(r"(\d{4}-\d{2}-\d{2})", stem)
+        date = m.group(1) if m else ""
+
+    slug = meta.get("slug") or re.sub(r"^\d{4}-\d{2}-\d{2}-", "", stem)
+
     return {
         "slug": slug,
+        "lang": lang,
         "title": meta.get("title") or slug,
         "date": date,
         "tags": [t.strip() for t in meta.get("tags", "").split(",") if t.strip()],
@@ -69,12 +104,13 @@ def parse_post(path):
     }
 
 
-def human_date(iso):
+def human_date(iso, lang):
     try:
         d = datetime.strptime(iso, "%Y-%m-%d")
     except ValueError:
         return iso
-    return f"{d.day} {MONTHS[d.month - 1]} {d.year}"
+    month = STR[lang]["months"][d.month - 1]
+    return f"{d.day} {month} {d.year}" if lang == "ru" else f"{month} {d.day}, {d.year}"
 
 
 def rfc822(iso):
@@ -85,10 +121,44 @@ def rfc822(iso):
     return d.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 
-def head(title, description, rel):
-    """Общая шапка страниц блога. rel — путь до корня сайта."""
+def page_name(kind, slug, lang):
+    """Пути одинаковы для обоих языков, у английского добавляется .en."""
+    suffix = "" if lang == "ru" else ".en"
+    if kind == "post":
+        return f"{slug}{suffix}.html"
+    if kind == "index":
+        return f"blog{suffix}.html"
+    return f"feed{suffix}.xml"
+
+
+def head(title, description, lang, rel, alt_href):
+    s = STR[lang]
+    other = "en" if lang == "ru" else "ru"
+
+    # Кнопка ведёт на перевод, если он есть, иначе на список на другом языке.
+    lang_buttons = ""
+    for code in LANGS:
+        if code == lang:
+            lang_buttons += f'<span class="lang lang--on">{code}</span>'
+        else:
+            href = alt_href or f'{rel}{page_name("index", "", code)}'
+            lang_buttons += f'<a class="lang" href="{href}" data-lang="{code}">{code}</a>'
+
+    # Гостя переносим на его язык, только если перевод этой же страницы есть.
+    switch = ""
+    if alt_href:
+        switch = f"""
+<script>
+(function () {{
+  try {{
+    var want = localStorage.getItem('lang');
+    if (want === '{other}') location.replace('{alt_href}');
+  }} catch (e) {{}}
+}})();
+</script>"""
+
     return f"""<!doctype html>
-<html lang="ru" data-theme="dark">
+<html lang="{lang}" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -98,10 +168,11 @@ def head(title, description, rel):
 <meta property="og:description" content="{html.escape(description)}">
 <meta property="og:type" content="article">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127756;</text></svg>">
-<link rel="alternate" type="application/rss+xml" title="{html.escape(SITE_TITLE)}" href="{rel}feed.xml">
+<link rel="alternate" type="application/rss+xml" title="{html.escape(s['site_title'])}" href="{rel}{page_name('feed', '', lang)}">
+{f'<link rel="alternate" hreflang="{other}" href="{alt_href}">' if alt_href else ''}
 <link rel="stylesheet" href="{rel}assets/css/style.css">
 </head>
-<body>
+<body>{switch}
 
 <div class="grain" aria-hidden="true"></div>
 
@@ -111,11 +182,12 @@ def head(title, description, rel):
     <span class="brand-name">villcreat</span>
   </a>
   <nav class="topnav">
-    <a href="{rel}">главная</a>
-    <a href="{rel}blog.html">блог</a>
-    <a href="{rel}feed.xml">rss</a>
+    <a href="{rel}">{s['home']}</a>
+    <a href="{rel}{page_name('index', '', lang)}">{s['blog']}</a>
+    <a href="{rel}{page_name('feed', '', lang)}">rss</a>
   </nav>
-  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
+  <div class="langs">{lang_buttons}</div>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="theme">
     <span class="theme-dot" aria-hidden="true"></span>
     <span id="theme-label">dark</span>
   </button>
@@ -129,7 +201,7 @@ FOOT = """
 </footer>
 
 <script>
-// Тема живёт в том же ключе, что и на главной, чтобы выбор не терялся.
+// Тема и язык живут в тех же ключах, что и на главной, чтобы выбор не терялся.
 (function () {
   var root = document.documentElement;
   var btn = document.getElementById('theme-toggle');
@@ -142,6 +214,12 @@ FOOT = """
     theme = theme === 'dark' ? 'light' : 'dark';
     localStorage.setItem('theme', theme);
     apply();
+  });
+
+  document.querySelectorAll('.langs a[data-lang]').forEach(function (a) {
+    a.addEventListener('click', function () {
+      try { localStorage.setItem('lang', a.dataset.lang); } catch (e) {}
+    });
   });
 })();
 </script>
@@ -157,32 +235,40 @@ def tags_html(tags):
     return f'<div class="tags">{items}</div>'
 
 
-def build_post(post):
+def build_post(post, has_translation):
+    lang = post["lang"]
+    s = STR[lang]
+    alt = f'{page_name("post", post["slug"], "en" if lang == "ru" else "ru")}' if has_translation else ""
+
     body = render(post["body"])
-    page = head(f'{post["title"]} — {SITE_TITLE}', post["summary"], "../")
+    note = "" if has_translation else f'<span class="tag tag--muted">{s["no_translation"]}</span>'
+
+    page = head(f'{post["title"]} — {s["site_title"]}', post["summary"], lang, "../", alt)
     page += f"""
 <main class="prose">
-  <a class="back" href="../blog.html">← все заметки</a>
+  <a class="back" href="../{page_name('index', '', lang)}">{s['all_posts']}</a>
   <article>
     <header class="post-head">
-      <time class="post-date" datetime="{html.escape(post["date"])}">{human_date(post["date"])}</time>
-      <h1 class="post-title">{html.escape(post["title"])}</h1>
-      {tags_html(post["tags"])}
+      <time class="post-date" datetime="{html.escape(post['date'])}">{human_date(post['date'], lang)}</time>
+      <h1 class="post-title">{html.escape(post['title'])}</h1>
+      <div class="tags">{tags_html(post['tags'])[len('<div class="tags">'):-len('</div>')] if post['tags'] else ''}{note}</div>
     </header>
     {body}
   </article>
-  <a class="back back--bottom" href="../blog.html">← все заметки</a>
+  <a class="back back--bottom" href="../{page_name('index', '', lang)}">{s['all_posts']}</a>
 </main>
 """
     page += FOOT
-    (OUT_DIR / f'{post["slug"]}.html').write_text(page, encoding="utf-8")
+    (OUT_DIR / page_name("post", post["slug"], lang)).write_text(page, encoding="utf-8")
 
 
-def build_index(posts):
+def build_index(posts, lang):
+    s = STR[lang]
+
     if posts:
         cards = "\n".join(
-            f"""    <li><a class="post-card" href="blog/{p['slug']}.html">
-      <time class="post-card-date" datetime="{html.escape(p['date'])}">{human_date(p['date'])}</time>
+            f"""    <li><a class="post-card" href="blog/{page_name('post', p['slug'], lang)}">
+      <time class="post-card-date" datetime="{html.escape(p['date'])}">{human_date(p['date'], lang)}</time>
       <h2 class="post-card-title">{html.escape(p['title'])}</h2>
       <p class="post-card-sum">{html.escape(p['summary'])}</p>
       {tags_html(p['tags'])}
@@ -191,28 +277,32 @@ def build_index(posts):
         )
         listing = f'<ul class="post-list">\n{cards}\n  </ul>'
     else:
-        listing = '<p class="empty">Пока пусто. Первая заметка появится здесь.</p>'
+        listing = f'<p class="empty">{s["empty"]}</p>'
 
-    page = head(f"Блог — {SITE_TITLE}", SITE_DESC, "")
+    other = "en" if lang == "ru" else "ru"
+    page = head(f'{s["blog"]} — {s["site_title"]}', s["site_desc"], lang, "",
+                page_name("index", "", other))
     page += f"""
 <main class="prose prose--wide">
   <header class="blog-head">
-    <h1 class="post-title">блог</h1>
-    <p class="blog-sub">{html.escape(SITE_DESC)} <a href="feed.xml">RSS</a></p>
+    <h1 class="post-title">{s['blog']}</h1>
+    <p class="blog-sub">{html.escape(s['site_desc'])}
+      <a href="{page_name('feed', '', lang)}">RSS</a></p>
   </header>
   {listing}
 </main>
 """
     page += FOOT
-    (ROOT / "blog.html").write_text(page, encoding="utf-8")
+    (ROOT / page_name("index", "", lang)).write_text(page, encoding="utf-8")
 
 
-def build_feed(posts):
+def build_feed(posts, lang):
+    s = STR[lang]
     items = "\n".join(
         f"""    <item>
       <title>{html.escape(p['title'])}</title>
-      <link>{SITE_URL}/blog/{p['slug']}.html</link>
-      <guid isPermaLink="true">{SITE_URL}/blog/{p['slug']}.html</guid>
+      <link>{SITE_URL}/blog/{page_name('post', p['slug'], lang)}</link>
+      <guid isPermaLink="true">{SITE_URL}/blog/{page_name('post', p['slug'], lang)}</guid>
       <pubDate>{rfc822(p['date'])}</pubDate>
       <description>{html.escape(p['summary'])}</description>
     </item>"""
@@ -222,41 +312,49 @@ def build_feed(posts):
     feed = f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>{html.escape(SITE_TITLE)}</title>
-    <link>{SITE_URL}/blog.html</link>
-    <description>{html.escape(SITE_DESC)}</description>
-    <language>ru</language>
-    <atom:link href="{SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
+    <title>{html.escape(s['site_title'])}</title>
+    <link>{SITE_URL}/{page_name('index', '', lang)}</link>
+    <description>{html.escape(s['site_desc'])}</description>
+    <language>{lang}</language>
+    <atom:link href="{SITE_URL}/{page_name('feed', '', lang)}" rel="self" type="application/rss+xml"/>
 {items}
   </channel>
 </rss>
 """
-    (ROOT / "feed.xml").write_text(feed, encoding="utf-8")
+    (ROOT / page_name("feed", "", lang)).write_text(feed, encoding="utf-8")
 
 
 def main():
     POSTS_DIR.mkdir(exist_ok=True)
     OUT_DIR.mkdir(exist_ok=True)
 
-    posts = []
+    by_lang = {code: [] for code in LANGS}
+    slugs = {code: set() for code in LANGS}
+
     for path in sorted(POSTS_DIR.glob("*.md")):
         post = parse_post(path)
-        if post:
-            posts.append(post)
-            print(f"  {post['date']} {post['title']}")
-        else:
+        if not post:
             print(f"  черновик пропущен: {path.name}")
+            continue
+        if post["lang"] not in LANGS:
+            continue
+        by_lang[post["lang"]].append(post)
+        slugs[post["lang"]].add(post["slug"])
 
-    posts.sort(key=lambda p: p["date"], reverse=True)
+    for code in LANGS:
+        posts = sorted(by_lang[code], key=lambda p: p["date"], reverse=True)
+        other = "en" if code == "ru" else "ru"
 
-    for post in posts:
-        build_post(post)
-    build_index(posts)
-    build_feed(posts)
+        for post in posts:
+            build_post(post, post["slug"] in slugs[other])
+        build_index(posts, code)
+        build_feed(posts, code)
 
-    print(f"готово: {len(posts)} заметок, blog.html и feed.xml")
+        translated = sum(1 for p in posts if p["slug"] in slugs[other])
+        print(f"  {code}: {len(posts)} заметок, из них с переводом {translated}")
 
 
 if __name__ == "__main__":
     print("блог:")
     main()
+    print("готово")

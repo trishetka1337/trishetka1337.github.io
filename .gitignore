@@ -1,7 +1,7 @@
 data/
 blog/
-blog.html
-feed.xml
+blog*.html
+feed*.xml
 .claude/
 .DS_Store
 __pycache__/

@@ -1,8 +1,14 @@
 // Всё, что меняется руками, живёт здесь.
+//
+// Любой текст можно писать двумя способами:
+//   'одинаково для обоих языков'
+//   { ru: 'по-русски', en: 'in english' }
+
 export const CONFIG = {
   nick: 'villcreat',
-  tagline: 'self-hosted всё подряд',
-  // Чем занят прямо сейчас. Крутится в шапке.
+  tagline: { ru: 'self-hosted всё подряд', en: 'self-hosting everything' },
+
+  // Чем занят прямо сейчас. Крутится в шапке. Слова английские в обоих языках.
   doing: ['building', 'self-hosting', 'breaking', 'fixing'],
 
   // Часы. Город не называем: только страна и смещение.
@@ -28,10 +34,23 @@ export const CONFIG = {
   now: {
     updated: '2026-09-05',
     lines: [
-      'пытаюсь делать сайт потому что могу себе позволить',
-      'пытаюсь делать свою почту облако впн и прочую херь',
-      { text: 'делаю приложение для андроида', strike: true, note: 'надоело + не получилось' },
-      'делаю жалкие попытки в написании музыки',
+      {
+        ru: 'пытаюсь делать сайт потому что могу себе позволить',
+        en: 'making a website because i can afford to',
+      },
+      {
+        ru: 'пытаюсь делать свою почту облако впн и прочую херь',
+        en: 'running my own mail, cloud, vpn and other nonsense',
+      },
+      {
+        text: { ru: 'делаю приложение для андроида', en: 'building an android app' },
+        strike: true,
+        note: { ru: 'надоело + не получилось', en: 'got bored + it did not work' },
+      },
+      {
+        ru: 'делаю жалкие попытки в написании музыки',
+        en: 'making pathetic attempts at writing music',
+      },
     ],
   },
 
@@ -49,35 +68,12 @@ export const CONFIG = {
   // Образец, снять комментарий и переписать под себя:
   // {
   //   name: 'Название',
-  //   description: 'Одна-две строки о том, что это и зачем.',
+  //   description: { ru: 'Что это и зачем.', en: 'What it is and why.' },
   //   href: 'https://пример.ру',   // необязательно
   //   tag: 'Go · Docker',          // необязательно
   //   status: 'wip',
   // },
   pinned: [],
-
-  // СВЯЗЬ.
-  // group  — заголовок раздела, пункты с одинаковым group идут вместе
-  // value  — что видно на странице. Пустое значение прячет пункт целиком
-  // href   — куда ведёт клик. Без href пункт копируется в буфер
-  // note   — приписка справа: основной, второй, рабочий
-  contacts: [
-    { group: 'написать', label: 'Telegram', value: '@villcreatgd', href: 'https://t.me/villcreatgd', note: 'основной' },
-    { group: 'написать', label: 'Telegram', value: '@NVSK2005', href: 'https://t.me/NVSK2005', note: 'второй' },
-    { group: 'написать', label: 'Discord', value: 'villcreat' },
-    { group: 'написать', label: 'Почта', value: 'ttyuki97@gmail.com', href: 'mailto:ttyuki97@gmail.com' },
-
-    { group: 'найти', label: 'GitHub', value: '@villcreat', href: 'https://github.com/villcreat' },
-    { group: 'найти', label: 'Steam', value: 'rtx3090user', href: 'https://steamcommunity.com/id/rtx3090user', note: 'основной' },
-    { group: 'найти', label: 'Steam', value: 'villcreat', href: 'https://steamcommunity.com/id/villcreat', note: 'второй' },
-    { group: 'найти', label: 'Spotify', value: 'профиль', href: 'https://open.spotify.com/user/31uxknpuqbe2cao3wh724xnzypdu' },
-  ],
-
-  // Кольцо личных сайтов. Классика IndieWeb.
-  webring: [
-    { label: 'keetsta', href: 'https://keetsta.me' },
-    { label: 'nichind', href: 'https://nichind.dev' },
-  ],
 
   // СТЕК. level: 3 основное, 2 уверенно, 1 по необходимости.
   // since — год, с которого работаешь с этим. Стаж считается сам,
@@ -89,6 +85,47 @@ export const CONFIG = {
     { name: 'Docker',         level: 2, since: 2023 },
     { name: 'C++',            level: 2, since: 2024 },
     { name: 'Go',             level: 1, since: 2025 },
+  ],
+
+  // СВЯЗЬ.
+  // group  — 'message' написать или 'find' найти
+  // value  — что видно на странице. Пустое значение прячет пункт целиком
+  // href   — куда ведёт клик. Без href пункт копируется в буфер
+  // note   — приписка справа
+  contacts: [
+    {
+      group: 'message', label: 'Telegram', value: '@villcreatgd',
+      href: 'https://t.me/villcreatgd', note: { ru: 'основной', en: 'main' },
+    },
+    {
+      group: 'message', label: 'Telegram', value: '@NVSK2005',
+      href: 'https://t.me/NVSK2005', note: { ru: 'второй', en: 'second' },
+    },
+    { group: 'message', label: 'Discord', value: 'villcreat' },
+    {
+      group: 'message', label: { ru: 'Почта', en: 'Mail' }, value: 'ttyuki97@gmail.com',
+      href: 'mailto:ttyuki97@gmail.com',
+    },
+
+    { group: 'find', label: 'GitHub', value: '@villcreat', href: 'https://github.com/villcreat' },
+    {
+      group: 'find', label: 'Steam', value: 'rtx3090user',
+      href: 'https://steamcommunity.com/id/rtx3090user', note: { ru: 'основной', en: 'main' },
+    },
+    {
+      group: 'find', label: 'Steam', value: 'villcreat',
+      href: 'https://steamcommunity.com/id/villcreat', note: { ru: 'второй', en: 'second' },
+    },
+    {
+      group: 'find', label: 'Spotify', value: { ru: 'профиль', en: 'profile' },
+      href: 'https://open.spotify.com/user/31uxknpuqbe2cao3wh724xnzypdu',
+    },
+  ],
+
+  // Кольцо личных сайтов. Классика IndieWeb.
+  webring: [
+    { label: 'keetsta', href: 'https://keetsta.me' },
+    { label: 'nichind', href: 'https://nichind.dev' },
   ],
 
   memberSince: 'JUN 2025',
