@@ -25,6 +25,10 @@
     <span class="brand-mark" aria-hidden="true"></span>
     <span class="brand-name">villcreat</span>
   </a>
+  <div class="topclock" id="topclock">
+    <span class="topclock-label" id="topclock-label">—</span>
+    <span class="topclock-time" id="author-time">--:--</span>
+  </div>
   <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
     <span class="theme-dot" aria-hidden="true"></span>
     <span id="theme-label">dark</span>
@@ -48,7 +52,7 @@
     <!-- ВРЕМЯ -->
     <section class="card" id="card-now">
       <div class="card-head">
-        <span class="card-title">сейчас</span>
+        <span class="card-title">сейчас у вас</span>
         <span class="chip" id="now-place">—</span>
       </div>
       <div class="clock" id="clock">
@@ -56,7 +60,9 @@
       </div>
       <div class="now-date" id="now-date">—</div>
       <dl class="kv kv--row">
-        <div><dt>зона</dt><dd id="now-tz">—</dd></div>
+        <div><dt>ваша зона</dt><dd id="now-tz">—</dd></div>
+        <div><dt>у меня</dt><dd id="now-mine">—</dd></div>
+        <div><dt>разница</dt><dd id="now-diff">—</dd></div>
       </dl>
     </section>
 

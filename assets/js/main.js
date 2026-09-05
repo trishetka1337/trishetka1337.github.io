@@ -172,33 +172,83 @@ function initRotator() {
 
 /* ============================== часы ============================== */
 
+/** Смещение часового пояса от UTC в минутах. */
+function tzOffsetMinutes(tz, date = new Date()) {
+  try {
+    const name = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' })
+      .formatToParts(date)
+      .find((p) => p.type === 'timeZoneName')?.value || '';
+    // Приходит вида GMT+03:00, а для нулевого пояса просто GMT.
+    const m = name.match(/GMT([+-])(\d{2}):(\d{2})/);
+    if (!m) return 0;
+    return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3]));
+  } catch {
+    return 0;
+  }
+}
+
+/** Подпись вида UTC+3 для произвольного пояса. */
+function tzLabel(tz) {
+  const min = tzOffsetMinutes(tz);
+  const sign = min < 0 ? '-' : '+';
+  const abs = Math.abs(min);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  return `UTC${sign}${h}${m ? ':' + pad(m) : ''}`;
+}
+
 function initClock() {
-  const tz = CONFIG.place.tz;
-  const timeFmt = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  // Крупные часы — время гостя: с них он и начинает смотреть страницу.
+  const guestTz = Intl.DateTimeFormat().resolvedOptions().timeZone || CONFIG.place.tz;
+  const authorTz = CONFIG.place.tz;
+
+  const guestTime = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: guestTz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   });
-  const dateFmt = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: tz, weekday: 'long', day: 'numeric', month: 'long',
+  const guestDate = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: guestTz, weekday: 'long', day: 'numeric', month: 'long',
+  });
+  const authorTime = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: authorTz, hour: '2-digit', minute: '2-digit', hour12: false,
   });
 
   const clock = $('clock');
-  const dateEl = $('now-date');
 
   const tick = () => {
-    const parts = Object.fromEntries(
-      timeFmt.formatToParts(new Date()).map((p) => [p.type, p.value])
-    );
+    const now = new Date();
+    const p = Object.fromEntries(guestTime.formatToParts(now).map((x) => [x.type, x.value]));
     clock.innerHTML =
-      `<span class="clock-hm">${parts.hour}:${parts.minute}</span>` +
-      `<span class="clock-s">:${parts.second}</span>`;
-    dateEl.textContent = dateFmt.format(new Date());
+      `<span class="clock-hm">${p.hour}:${p.minute}</span>` +
+      `<span class="clock-s">:${p.second}</span>`;
+    $('now-date').textContent = guestDate.format(now);
+
+    const mine = authorTime.format(now);
+    $('now-mine').textContent = mine;
+    $('author-time').textContent = mine;
   };
 
   tick();
   setInterval(tick, 1000);
 
-  $('now-place').textContent = CONFIG.place.label;
-  $('now-tz').textContent = CONFIG.place.tzLabel;
+  $('now-place').textContent = guestTz.split('/').pop().replace(/_/g, ' ');
+  $('now-tz').textContent = tzLabel(guestTz);
+  $('now-diff').textContent = diffText(tzOffsetMinutes(guestTz) - tzOffsetMinutes(authorTz));
+
+  $('topclock-label').textContent = CONFIG.place.label;
+  $('topclock').title = `время автора, ${CONFIG.place.tzLabel}`;
+}
+
+/** Насколько часы гостя убежали вперёд относительно моих. */
+function diffText(min) {
+  if (min === 0) return 'совпадает';
+  const ahead = min > 0;
+  const abs = Math.abs(min);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  const parts = [];
+  if (h) parts.push(`${h} ${plural(h, 'час', 'часа', 'часов')}`);
+  if (m) parts.push(`${m} мин`);
+  return `${ahead ? '+' : '−'}${parts.join(' ')}`;
 }
 
 /* ============================= погода ============================= */
