@@ -255,24 +255,43 @@ def collect_music():
 
 # Кого показываем в блоке «над головой». Номера каталога NORAD.
 SATELLITES = [
-    (25544, "МКС"),
-    (48274, "Тяньгун"),
-    (20580, "Hubble"),
-    (33591, "NOAA-19"),
-    (25994, "Terra"),
-    (27424, "Aqua"),
-    (49260, "Landsat-9"),
+    (25544, "МКС", "станции"),
+    (48274, "Тяньгун", "станции"),
+
+    (20580, "Hubble", "телескопы"),
+
+    (33591, "NOAA-19", "погода"),
+    (28654, "NOAA-18", "погода"),
+    (25338, "NOAA-15", "погода"),
+    (40069, "Метеор-М2", "погода"),
+
+    (25994, "Terra", "съёмка Земли"),
+    (27424, "Aqua", "съёмка Земли"),
+    (49260, "Landsat-9", "съёмка Земли"),
+    (39084, "Landsat-8", "съёмка Земли"),
+    (40697, "Sentinel-2A", "съёмка Земли"),
+    (42063, "Sentinel-2B", "съёмка Земли"),
+
+    (5, "Vanguard 1", "ветеран"),  # запущен в 1958, старейший объект на орбите
 ]
+
+# Сколько аппаратов Starlink подмешать. Берём из группового списка Celestrak:
+# конкретные номера быстро устаревают, аппараты сходят с орбиты.
+STARLINK_COUNT = 6
+
+
+def fetch_tle_text(url, max_bytes=None):
+    """Текст с Celestrak. max_bytes читает только начало потока."""
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", UA)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        raw = r.read(max_bytes) if max_bytes else r.read()
+    return raw.decode("utf-8", "replace")
 
 
 def fetch_tle(catnr):
-    """Две строки орбитальных элементов с Celestrak."""
-    url = f"https://celestrak.org/NORAD/elements/gp.php?CATNR={catnr}&FORMAT=tle"
-    req = urllib.request.Request(url)
-    req.add_header("User-Agent", UA)
-    with urllib.request.urlopen(req, timeout=20) as r:
-        text = r.read().decode("utf-8", "replace")
-
+    """Две строки орбитальных элементов по номеру каталога."""
+    text = fetch_tle_text(f"https://celestrak.org/NORAD/elements/gp.php?CATNR={catnr}&FORMAT=tle")
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     # На неизвестный номер приходит текстовая заглушка, а не элементы.
     if len(lines) < 3 or not lines[1].startswith("1 ") or not lines[2].startswith("2 "):
@@ -280,17 +299,59 @@ def fetch_tle(catnr):
     return lines[1], lines[2]
 
 
+def fetch_starlink(count):
+    """
+    Несколько аппаратов Starlink.
+
+    Берём supplemental-ленту: обычный GROUP=starlink отдаёт данные не чаще
+    раза в два часа на адрес и отвечает 403, а наш workflow ходит чаще.
+    Читаем только начало потока: весь файл весит под два мегабайта, а нам
+    нужно несколько аппаратов.
+    """
+    text = fetch_tle_text(
+        "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink&FORMAT=tle",
+        max_bytes=256 * count,
+    )
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    # Последняя строка могла оборваться на середине — она не нужна.
+    if lines and not lines[-1].startswith(("1 ", "2 ")):
+        lines.pop()
+
+    out = []
+    # Файл идёт тройками: имя, строка 1, строка 2.
+    for i in range(0, len(lines) - 2, 3):
+        name, l1, l2 = lines[i], lines[i + 1], lines[i + 2]
+        if not l1.startswith("1 ") or not l2.startswith("2 "):
+            continue
+        # Номер каталога стоит во второй колонке первой строки.
+        try:
+            catnr = int(l1[2:7])
+        except ValueError:
+            continue
+        out.append({"id": catnr, "name": name.title(), "group": "связь", "tle1": l1, "tle2": l2})
+        if len(out) >= count:
+            break
+    return out
+
+
 def collect_satellites():
     print("спутники:")
     sats = []
-    for catnr, name in SATELLITES:
+    for catnr, name, group in SATELLITES:
         try:
             tle1, tle2 = fetch_tle(catnr)
         except Exception as e:
             print(f"  {name}: {e}")
             continue
-        sats.append({"id": catnr, "name": name, "tle1": tle1, "tle2": tle2})
+        sats.append({"id": catnr, "name": name, "group": group, "tle1": tle1, "tle2": tle2})
         print(f"  {name}: ок")
+
+    try:
+        starlink = fetch_starlink(STARLINK_COUNT)
+        sats.extend(starlink)
+        print(f"  Starlink: {len(starlink)} шт")
+    except Exception as e:
+        print(f"  Starlink: {e}")
 
     if not sats:
         print("  ничего не собралось, файл не трогаем")

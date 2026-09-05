@@ -348,7 +348,11 @@ async function initSats() {
   const recs = data.sats
     .map((s) => {
       try {
-        return { name: s.name, rec: window.satellite.twoline2satrec(s.tle1, s.tle2) };
+        return {
+          name: s.name,
+          group: s.group || '',
+          rec: window.satellite.twoline2satrec(s.tle1, s.tle2),
+        };
       } catch {
         return null;
       }
@@ -394,7 +398,7 @@ async function initSats() {
     const observer = { longitude: city.lon * rad, latitude: city.lat * rad, height: 0.1 };
 
     const rows = [];
-    for (const { name, rec } of recs) {
+    for (const { name, group, rec } of recs) {
       const pv = window.satellite.propagate(rec, now);
       if (!pv || !pv.position) continue;
 
@@ -405,6 +409,7 @@ async function initSats() {
 
       rows.push({
         name,
+        group,
         elevation: look.elevation / rad,       // высота над горизонтом, градусы
         azimuth: look.azimuth / rad,           // азимут, градусы от севера
         range: look.rangeSat,                  // расстояние до наблюдателя, км
@@ -413,22 +418,27 @@ async function initSats() {
       });
     }
 
-    // Сначала те, что выше над горизонтом.
-    rows.sort((a, b) => b.elevation - a.elevation);
-    const visible = rows.filter((r) => r.elevation > 0);
+    // Сверху те, кто над горизонтом, ниже — по времени ближайшего пролёта.
+    const visible = rows.filter((r) => r.elevation > 0).sort((a, b) => b.elevation - a.elevation);
+    const hidden = rows
+      .filter((r) => r.elevation <= 0)
+      .sort((a, b) => (passes.get(a.name) ?? 1e9) - (passes.get(b.name) ?? 1e9));
+    rows.length = 0;
+    rows.push(...visible, ...hidden);
 
     // Падежи городов не склоняем: город выносим отдельной строкой под списком.
     $('sats-summary').textContent = `видно ${visible.length} из ${rows.length}`;
 
     // Небо сверху: центр — зенит, край круга — горизонт.
+    // Подписываем только пять самых высоких, иначе имена налезают друг на друга.
     $('sky-dots').innerHTML = visible
-      .map((r) => {
+      .map((r, i) => {
         const dist = ((90 - r.elevation) / 90) * 100;
         const x = dist * Math.sin(r.azimuth * rad);
         const y = -dist * Math.cos(r.azimuth * rad);
+        const label = i < 5 ? `<text x="6" y="3">${escapeHTML(r.name)}</text>` : '';
         return `<g class="sky-sat" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
-          <circle r="3.5"/>
-          <text x="6" y="3">${escapeHTML(r.name)}</text>
+          <circle r="3.5"><title>${escapeHTML(r.name)}</title></circle>${label}
         </g>`;
       })
       .join('');
@@ -439,7 +449,10 @@ async function initSats() {
         '<text class="sky-empty" x="0" y="4">сейчас никого</text>';
     }
 
-    $('sats').innerHTML = rows
+    // Длинный список утомляет: показываем видимых и ближайших, остальных под кнопкой.
+    const shown = expanded ? rows : rows.slice(0, Math.max(visible.length + 4, 6));
+
+    $('sats').innerHTML = shown
       .map((r) => {
         const up = r.elevation > 0;
         const when = up
@@ -448,15 +461,28 @@ async function initSats() {
         return `<li class="sat ${up ? 'sat--up' : ''}">
           <span class="sat-name">${escapeHTML(r.name)}</span>
           <span class="sat-el">${when}</span>
-          <span class="sat-num">${Math.round(r.height)} км</span>
-          <span class="sat-num">${Math.round(r.speed).toLocaleString('ru-RU')} км/ч</span>
+          <span class="sat-group">${escapeHTML(r.group)}</span>
+          <span class="sat-num">${Math.round(r.height)} км · ${Math.round(r.speed).toLocaleString('ru-RU')} км/ч</span>
         </li>`;
       })
       .join('');
 
+    const rest = rows.length - shown.length;
+    const more = $('sats-more');
+    more.hidden = rest <= 0 && !expanded;
+    more.textContent = expanded
+      ? 'свернуть'
+      : `показать ещё ${rest} ${plural(rest, 'спутник', 'спутника', 'спутников')}`;
+
     $('sats-note').textContent =
       `точка наблюдения: ${city.name} · орбиты обновлены ${ago(data.updated_at)}`;
   };
+
+  let expanded = false;
+  $('sats-more').addEventListener('click', () => {
+    expanded = !expanded;
+    draw();
+  });
 
   recalcPasses();
   draw();
