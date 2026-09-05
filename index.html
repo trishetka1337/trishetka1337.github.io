@@ -10,6 +10,7 @@
 <meta property="og:type" content="profile">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127756;</text></svg>">
 <link rel="preconnect" href="https://api.open-meteo.com">
+<link rel="preconnect" href="https://geocoding-api.open-meteo.com">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="me" href="https://github.com/villcreat">
 <link rel="me" href="https://t.me/villcreatgd">
@@ -72,6 +73,7 @@
       <div class="city-picker" id="city-picker" hidden>
         <input class="city-input" id="city-input" type="search" autocomplete="off"
                placeholder="город: Токио, Лима, Мурманск…" aria-label="Поиск города">
+        <button class="city-geo" id="city-geo" type="button">определить точно</button>
         <ul class="city-results" id="city-results"></ul>
       </div>
 

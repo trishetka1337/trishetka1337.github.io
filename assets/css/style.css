@@ -149,21 +149,16 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: .02em;
 }
 
-.rotator {
-  display: inline-block; position: relative;
-  min-width: 9ch;
-  overflow: hidden;
-  height: 1.4em; line-height: 1.4;
-  vertical-align: -.32em;
-}
+/* Без overflow и фиксированной высоты: маска резала слово по нижнему краю. */
+.rotator { display: inline-block; min-width: 9ch; }
 .rotator-word {
-  display: block; line-height: 1.4;
+  display: inline-block;
   color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
-  animation: word-in .5s cubic-bezier(.2,.8,.2,1);
+  animation: word-in .45s cubic-bezier(.2,.8,.2,1);
 }
 @keyframes word-in {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(5px); opacity: 0; }
+  to   { transform: none;            opacity: 1; }
 }
 
 .hero-sub { margin: 6px 0 0; color: var(--text-3); font-size: 14px; }
@@ -425,6 +420,16 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 }
 .city-input:focus { border-color: var(--accent); }
 .city-input::placeholder { color: var(--text-3); }
+
+.city-geo {
+  width: 100%; margin-top: 6px; padding: 7px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-3); cursor: pointer;
+  background: transparent;
+  border: 1px dashed var(--line); border-radius: var(--radius-sm);
+  transition: color .2s, border-color .2s;
+}
+.city-geo:hover { color: var(--accent); border-color: var(--accent); }
 
 .city-results { list-style: none; margin: 7px 0 0; padding: 0; display: grid; gap: 4px; }
 .city-option {

@@ -50,27 +50,78 @@ function escapeHTML(s) {
 /* ======================== выбранный город ========================= */
 // Один источник правды для погоды, солнца и спутников.
 
-let city = readCity();
+let city = readSavedCity() || { ...CONFIG.defaultCity };
+const cityChosen = Boolean(readSavedCity()); // выбирал ли посетитель город руками
 const cityListeners = [];
 
-function readCity() {
+function readSavedCity() {
   try {
     const saved = JSON.parse(localStorage.getItem('city') || 'null');
     if (saved && Number.isFinite(saved.lat) && Number.isFinite(saved.lon)) return saved;
-  } catch { /* испорченная запись, берём город по умолчанию */ }
-  return { ...CONFIG.defaultCity };
+  } catch { /* испорченная запись, игнорируем */ }
+  return null;
 }
 
-function setCity(next) {
+/**
+ * @param {boolean} persist ручной выбор запоминаем, автоопределение нет:
+ *   иначе город прилипнет навсегда, даже если человек переедет.
+ */
+function setCity(next, persist = true) {
   city = next;
-  try {
-    localStorage.setItem('city', JSON.stringify(next));
-  } catch { /* приватный режим, переживём */ }
+  if (persist) {
+    try {
+      localStorage.setItem('city', JSON.stringify(next));
+    } catch { /* приватный режим, переживём */ }
+  }
   $('city-name').textContent = next.name;
   cityListeners.forEach((fn) => fn(next));
 }
 
 const onCityChange = (fn) => cityListeners.push(fn);
+
+/**
+ * Ищем город в геокодере Open-Meteo и берём тот, чей часовой пояс совпадает
+ * с искомым. Без этой проверки поиск подсовывает однофамильцев: по запросу
+ * New York находится деревня Йорк в Небраске.
+ */
+async function geocodeInZone(query, tz, lang) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?count=10&language=${lang}` +
+    `&format=json&name=${encodeURIComponent(query)}`;
+  try {
+    const r = await fetch(url);
+    const found = (await r.json()).results || [];
+    const f = found
+      .filter((x) => x.timezone === tz)
+      .sort((a, b) => (b.population || 0) - (a.population || 0))[0];
+    if (!f) return null;
+    return { name: f.name, country: f.country_code || '', lat: f.latitude, lon: f.longitude };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Город посетителя по его часовому поясу.
+ *
+ * Имя пояса и так содержит крупный город: Europe/Moscow, Asia/Tokyo.
+ * Это не требует ни разрешения на геолокацию, ни обращения к сервисам,
+ * которые определяют место по адресу: пояс уже известен браузеру.
+ *
+ * Русский поиск закрывает большинство поясов, английский добирает те,
+ * где русского названия в базе нет. Если ничего не совпало по поясу,
+ * возвращаем null: пусть лучше останется город по умолчанию, чем чужая деревня.
+ */
+async function detectCityByTimezone() {
+  let tz = '';
+  try {
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch { /* совсем старый браузер */ }
+
+  if (!tz.includes('/')) return null;
+  const guess = tz.split('/').pop().replace(/_/g, ' ');
+
+  return (await geocodeInZone(guess, tz, 'ru')) || geocodeInZone(guess, tz, 'en');
+}
 
 /* ============================== тема ============================== */
 
@@ -225,6 +276,31 @@ function initCityPicker() {
     if (open) input.focus();
     else close();
   });
+
+  // Точное место — только по явному клику и только в браузере посетителя.
+  const geo = $('city-geo');
+  if (!navigator.geolocation) {
+    geo.remove();
+  } else {
+    geo.addEventListener('click', () => {
+      geo.textContent = 'определяю…';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          // Округляем до километра: точные координаты человека уходить наружу не должны.
+          setCity({
+            name: 'моё место',
+            country: '',
+            lat: Math.round(pos.coords.latitude * 100) / 100,
+            lon: Math.round(pos.coords.longitude * 100) / 100,
+          });
+          geo.textContent = 'определить точно';
+          close();
+        },
+        () => { geo.textContent = 'не вышло, выбери вручную'; },
+        { timeout: 10000, maximumAge: 600000 }
+      );
+    });
+  }
 
   input.addEventListener('input', () => {
     clearTimeout(timer);
@@ -766,9 +842,17 @@ initSun();
 renderPinned();
 initLinks();
 
-$('city-name').textContent = city.name;
+$('city-name').textContent = cityChosen ? city.name : 'определяю…';
 loadWeather(city);
 onCityChange(loadWeather);
+
+// Если посетитель ещё ничего не выбирал, подставляем его город сами.
+if (!cityChosen) {
+  detectCityByTimezone().then((found) => {
+    if (found && !readSavedCity()) setCity(found, false);
+    else $('city-name').textContent = city.name;
+  });
+}
 
 initSats();
 initGitHub();
