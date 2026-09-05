@@ -1,3 +1,6 @@
 data/
+blog/
+blog.html
+feed.xml
 .claude/
 .DS_Store
