@@ -62,18 +62,30 @@ function readSavedCity() {
   return null;
 }
 
+// Откуда взялся город. Влияет только на подпись под погодой.
+let cityMode = cityChosen ? 'manual' : 'default';
+
+const WHO = {
+  manual:  'это погода в городе, который выбрали вы',
+  geo:     'это погода по вашему местоположению',
+  auto:    'это погода у вас: город определён по часовому поясу браузера',
+  default: 'город по умолчанию, нажмите на него и выберите свой',
+};
+
 /**
  * @param {boolean} persist ручной выбор запоминаем, автоопределение нет:
  *   иначе город прилипнет навсегда, даже если человек переедет.
  */
-function setCity(next, persist = true) {
+function setCity(next, persist = true, mode = persist ? 'manual' : 'auto') {
   city = next;
+  cityMode = mode;
   if (persist) {
     try {
       localStorage.setItem('city', JSON.stringify(next));
     } catch { /* приватный режим, переживём */ }
   }
   $('city-name').textContent = next.name;
+  $('wx-who').textContent = WHO[mode];
   cityListeners.forEach((fn) => fn(next));
 }
 
@@ -292,7 +304,7 @@ function initCityPicker() {
             country: '',
             lat: Math.round(pos.coords.latitude * 100) / 100,
             lon: Math.round(pos.coords.longitude * 100) / 100,
-          });
+          }, true, 'geo');
           geo.textContent = 'определить точно';
           close();
         },
@@ -843,14 +855,19 @@ renderPinned();
 initLinks();
 
 $('city-name').textContent = cityChosen ? city.name : 'определяю…';
+$('wx-who').textContent = cityChosen ? WHO.manual : '';
 loadWeather(city);
 onCityChange(loadWeather);
 
 // Если посетитель ещё ничего не выбирал, подставляем его город сами.
 if (!cityChosen) {
   detectCityByTimezone().then((found) => {
-    if (found && !readSavedCity()) setCity(found, false);
-    else $('city-name').textContent = city.name;
+    if (found && !readSavedCity()) {
+      setCity(found, false, 'auto');
+    } else {
+      $('city-name').textContent = city.name;
+      $('wx-who').textContent = WHO.default;
+    }
   });
 }
 
