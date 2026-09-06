@@ -81,12 +81,11 @@ function initChrome() {
   });
 
   const btn = $('theme-toggle');
-  const label = $('theme-label');
   let theme = localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   const apply = () => {
     document.documentElement.dataset.theme = theme;
-    label.textContent = theme;
+    btn.setAttribute('aria-checked', String(theme === 'light'));
   };
   apply();
   btn.addEventListener('click', () => {

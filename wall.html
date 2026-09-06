@@ -23,9 +23,11 @@
     <a id="nav-blog" href="blog.html">блог</a>
   </nav>
   <div class="langs" id="langs" role="group" aria-label="Язык"></div>
-  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
-    <span class="theme-dot" aria-hidden="true"></span>
-    <span id="theme-label">dark</span>
+  <button class="theme-switch" id="theme-toggle" type="button" role="switch"
+          aria-checked="false" aria-label="Тема" title="Тема">
+    <span class="theme-knob" aria-hidden="true"></span>
+    <span class="theme-ico theme-ico--sun" aria-hidden="true">☀</span>
+    <span class="theme-ico theme-ico--moon" aria-hidden="true">☾</span>
   </button>
 </header>
 

@@ -128,6 +128,19 @@ export const CONFIG = {
     { label: 'nichind', href: 'https://nichind.dev' },
   ],
 
+  // ФОНОВАЯ МУЗЫКА. Ссылка на плейлист, альбом или трек в Spotify.
+  // Пустое поле — блока на странице нет.
+  // Проигрыватель встраивается только после нажатия: он тянет чужие куки,
+  // да и браузеры всё равно не дают музыке заиграть самой.
+  spotify: {
+    link: '',
+    title: { ru: 'фоном', en: 'background noise' },
+    note: {
+      ru: 'плеер загрузится по клику. без подписки Spotify играют отрывки',
+      en: 'the player loads on click. without Spotify Premium it plays previews',
+    },
+  },
+
   // Адрес сайта. Нужен для кода кнопки, который копируют другие.
   siteUrl: 'https://villcreat.github.io',
 

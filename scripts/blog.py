@@ -190,9 +190,11 @@ def head(title, description, lang, rel, alt_href):
     <a href="{rel}{page_name('feed', '', lang)}">rss</a>
   </nav>
   <div class="langs">{lang_buttons}</div>
-  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="theme">
-    <span class="theme-dot" aria-hidden="true"></span>
-    <span id="theme-label">dark</span>
+  <button class="theme-switch" id="theme-toggle" type="button" role="switch"
+          aria-checked="false" aria-label="theme">
+    <span class="theme-knob" aria-hidden="true"></span>
+    <span class="theme-ico theme-ico--sun" aria-hidden="true">&#9728;</span>
+    <span class="theme-ico theme-ico--moon" aria-hidden="true">&#9790;</span>
   </button>
 </header>
 """
@@ -208,10 +210,12 @@ FOOT = """
 (function () {
   var root = document.documentElement;
   var btn = document.getElementById('theme-toggle');
-  var label = document.getElementById('theme-label');
   var theme = localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  function apply() { root.dataset.theme = theme; label.textContent = theme; }
+  function apply() {
+    root.dataset.theme = theme;
+    btn.setAttribute('aria-checked', String(theme === 'light'));
+  }
   apply();
   btn.addEventListener('click', function () {
     theme = theme === 'dark' ? 'light' : 'dark';

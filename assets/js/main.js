@@ -202,14 +202,13 @@ async function detectCityByTimezone() {
 
 function initTheme() {
   const btn = $('theme-toggle');
-  const label = $('theme-label');
   const saved = localStorage.getItem('theme');
   const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   let theme = saved || (prefersLight ? 'light' : 'dark');
 
   const apply = () => {
     document.documentElement.dataset.theme = theme;
-    label.textContent = theme;
+    btn.setAttribute('aria-checked', String(theme === 'light'));
   };
   apply();
 
@@ -879,6 +878,43 @@ function renderStack() {
     .join('');
 }
 
+/* ========================== фоном музыка ========================== */
+
+/**
+ * Ссылка Spotify в адрес встраиваемого проигрывателя.
+ * Годятся плейлист, альбом, трек и подборка artist.
+ */
+function spotifyEmbed(link) {
+  const m = String(link).match(/(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/);
+  if (!m) return null;
+  return `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`;
+}
+
+function renderPlayer() {
+  const cfg = CONFIG.spotify || {};
+  const src = cfg.link ? spotifyEmbed(cfg.link) : null;
+  if (!src) {
+    $('card-spotify').remove();
+    return;
+  }
+
+  $('card-spotify').hidden = false;
+  $('spotify-title').textContent = L(cfg.title) || (lang === 'ru' ? 'фоном' : 'background');
+  $('player-note').textContent = L(cfg.note);
+
+  const start = $('player-start');
+  start.textContent = lang === 'ru' ? '▶ включить' : '▶ play';
+
+  // Проигрыватель появляется только по клику: iframe тянет чужие куки,
+  // а автозапуск браузеры всё равно блокируют.
+  start.addEventListener('click', () => {
+    $('player').innerHTML =
+      `<iframe class="player-frame" src="${src}" width="100%" height="152"
+        frameborder="0" loading="lazy" title="Spotify"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+  }, { once: true });
+}
+
 /* ========================= кнопки и блинки ========================= */
 
 function renderButtons() {
@@ -1055,6 +1091,7 @@ initSun();
 renderPinned();
 renderDoing();
 renderStack();
+renderPlayer();
 renderButtons();
 initLinks();
 
