@@ -169,7 +169,7 @@ def head(title, description, lang, rel, alt_href):
 <meta property="og:title" content="{html.escape(title)}">
 <meta property="og:description" content="{html.escape(description)}">
 <meta property="og:type" content="article">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127756;</text></svg>">
+<link rel="icon" type="image/jpeg" href="{rel}assets/img/icon.jpg">
 <link rel="alternate" type="application/rss+xml" title="{html.escape(s['site_title'])}" href="{rel}{page_name('feed', '', lang)}">
 {f'<link rel="alternate" hreflang="{other}" href="{alt_href}">' if alt_href else ''}
 <link rel="stylesheet" href="{rel}assets/css/style.css">
@@ -180,7 +180,7 @@ def head(title, description, lang, rel, alt_href):
 
 <header class="topbar">
   <a class="brand" href="{rel}">
-    <span class="brand-mark" aria-hidden="true"></span>
+    <img class="brand-mark" src="{rel}assets/img/icon.jpg" alt="" width="24" height="24">
     <span class="brand-name">villcreat</span>
   </a>
   <nav class="topnav">

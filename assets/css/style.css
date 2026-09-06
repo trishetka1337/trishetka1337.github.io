@@ -8,20 +8,20 @@
 :root {
   color-scheme: dark;
 
-  --bg:        #100e0c;
-  --bg-soft:   #16130f;
-  --panel:     #1a1613;
-  --panel-2:   #211c17;
-  --line:      #2c251e;
-  --line-soft: #241e19;
+  --bg:        #0c0e0c;
+  --bg-soft:   #101310;
+  --panel:     #141814;
+  --panel-2:   #1a1f1a;
+  --line:      #262d26;
+  --line-soft: #1f251f;
 
-  --text:      #ece5db;
-  --text-2:    #a99e90;
-  --text-3:    #6f665c;
+  --text:      #e6ebe4;
+  --text-2:    #9daa9c;
+  --text-3:    #667066;
 
-  --accent:    #e0a45c;
-  --accent-dk: #b57f3d;
-  --ok:        #7fb87a;
+  --accent:    #00ae4c;
+  --accent-dk: #008631;
+  --ok:        #57d98a;
   --warn:      #d9a441;
   --bad:       #cf6a5a;
 
@@ -36,18 +36,18 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg:        #f4f1ec;
-  --bg-soft:   #eeeae3;
+  --bg:        #f1f4f0;
+  --bg-soft:   #e9ede8;
   --panel:     #ffffff;
-  --panel-2:   #f7f4ef;
-  --line:      #e0d9cf;
-  --line-soft: #eae4db;
-  --text:      #1d1a16;
-  --text-2:    #6b6459;
-  --text-3:    #9a9287;
-  --accent:    #b7742a;
-  --accent-dk: #8f5a1e;
-  --ok:        #4f8a49;
+  --panel-2:   #f4f7f3;
+  --line:      #d8dfd6;
+  --line-soft: #e5eae3;
+  --text:      #161a15;
+  --text-2:    #5e685d;
+  --text-3:    #8d968c;
+  --accent:    #00863a;
+  --accent-dk: #00662b;
+  --ok:        #2e8b57;
   --warn:      #b58221;
   --bad:       #b04d3d;
 }
@@ -66,8 +66,8 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   background-image:
-    radial-gradient(circle at 12% -10%, rgba(224,164,92,.07), transparent 45%),
-    radial-gradient(circle at 88% 5%, rgba(224,164,92,.04), transparent 40%);
+    radial-gradient(circle at 12% -10%, rgba(0,174,76,.07), transparent 45%),
+    radial-gradient(circle at 88% 5%, rgba(0,174,76,.04), transparent 40%);
   background-attachment: fixed;
 }
 
@@ -96,9 +96,8 @@ a { color: inherit; text-decoration: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand-mark {
-  width: 22px; height: 22px; border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dk));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  width: 24px; height: 24px; border-radius: 6px;
+  object-fit: cover; display: block;
 }
 .brand-name {
   font-family: var(--mono); font-size: 13px; font-weight: 700;

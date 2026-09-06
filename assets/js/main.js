@@ -883,7 +883,7 @@ function renderStack() {
 
 function renderButtons() {
   const card = $('card-buttons');
-  const mine = `<a href="${CONFIG.siteUrl}"><img src="${CONFIG.siteUrl}/assets/img/button.svg" width="88" height="31" alt="villcreat"></a>`;
+  const mine = `<a href="${CONFIG.siteUrl}"><img src="${CONFIG.siteUrl}/assets/img/button.png" width="88" height="31" alt="villcreat"></a>`;
 
   $('buttons-title').textContent = lang === 'ru' ? 'кнопки' : 'buttons';
   $('buttons-hint').textContent = lang === 'ru'
