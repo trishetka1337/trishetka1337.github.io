@@ -51,6 +51,8 @@ function applyStatic() {
   $('sky-s').textContent = T.sky_compass.s;
   $('sky-w').textContent = T.sky_compass.w;
 
+  $('nav-wall').textContent = lang === 'ru' ? 'стена' : 'wall';
+
   // Блог существует на двух языках, ведём в нужную версию.
   $('nav-blog').href = lang === 'en' ? 'blog.en.html' : 'blog.html';
   $('nav-feed').href = lang === 'en' ? 'feed.en.xml' : 'feed.xml';

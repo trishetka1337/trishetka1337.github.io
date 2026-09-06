@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>стена — villcreat</title>
+<meta name="description" content="Гостевая стена: пишите что угодно.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127756;</text></svg>">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">villcreat</span>
+  </a>
+  <nav class="topnav">
+    <a id="nav-home" href="/">главная</a>
+    <a id="nav-blog" href="blog.html">блог</a>
+  </nav>
+  <div class="langs" id="langs" role="group" aria-label="Язык"></div>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
+    <span class="theme-dot" aria-hidden="true"></span>
+    <span id="theme-label">dark</span>
+  </button>
+</header>
+
+<main class="prose prose--wide">
+  <header class="blog-head">
+    <h1 class="post-title" id="wall-title">стена</h1>
+    <p class="blog-sub" id="wall-sub"></p>
+  </header>
+
+  <!-- Панель входа и форма -->
+  <section class="wall-box" id="wall-box">
+    <div class="wall-auth" id="wall-auth" hidden>
+      <p class="wall-auth-text" id="wall-auth-text"></p>
+      <div class="wall-auth-btns">
+        <button class="wall-btn" id="login-discord" type="button">Discord</button>
+        <button class="wall-btn" id="login-github" type="button">GitHub</button>
+      </div>
+    </div>
+
+    <form class="wall-form" id="wall-form" hidden>
+      <div class="wall-me">
+        <img class="wall-avatar" id="me-avatar" alt="" width="34" height="34">
+        <span class="wall-me-name" id="me-name"></span>
+        <button class="wall-logout" id="logout" type="button"></button>
+      </div>
+      <textarea class="wall-input" id="wall-input" rows="3" maxlength="600" required></textarea>
+      <div class="wall-form-foot">
+        <span class="wall-counter" id="wall-counter">0 / 600</span>
+        <button class="wall-send" id="wall-send" type="submit"></button>
+      </div>
+      <p class="wall-error" id="wall-error" hidden></p>
+    </form>
+
+    <p class="wall-setup" id="wall-setup" hidden></p>
+  </section>
+
+  <ul class="wall-list" id="wall-list"></ul>
+  <p class="empty" id="wall-empty" hidden></p>
+</main>
+
+<footer class="footer">
+  <div class="footer-meta"><span>villcreat</span></div>
+</footer>
+
+<script type="module" src="assets/js/wall.js"></script>
+</body>
+</html>

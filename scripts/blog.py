@@ -41,6 +41,7 @@ STR = {
         "site_desc": "Заметки о своих серверах, коде и прочей самодеятельности.",
         "blog": "блог",
         "home": "главная",
+        "wall": "стена",
         "all_posts": "← все заметки",
         "empty": "Пока пусто. Первая заметка появится здесь.",
         "no_translation": "только на русском",
@@ -52,6 +53,7 @@ STR = {
         "site_desc": "Notes about my servers, code and other homemade things.",
         "blog": "blog",
         "home": "home",
+        "wall": "wall",
         "all_posts": "← all posts",
         "empty": "Nothing here yet. The first post will show up here.",
         "no_translation": "russian only",
@@ -184,6 +186,7 @@ def head(title, description, lang, rel, alt_href):
   <nav class="topnav">
     <a href="{rel}">{s['home']}</a>
     <a href="{rel}{page_name('index', '', lang)}">{s['blog']}</a>
+    <a href="{rel}wall.html">{s['wall']}</a>
     <a href="{rel}{page_name('feed', '', lang)}">rss</a>
   </nav>
   <div class="langs">{lang_buttons}</div>
