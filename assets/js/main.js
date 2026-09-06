@@ -938,16 +938,28 @@ function parseMusic(link) {
 }
 
 function renderPlayer() {
-  const cfg = CONFIG.player || CONFIG.spotify || {};
-  const music = parseMusic(cfg.link);
+  const cfg = CONFIG.player || {};
+  const tracks = (cfg.tracks || []).filter((t) => t && t.src);
 
-  if (!music || (!music.src && !cfg.embedCode)) {
+  $('spotify-title').textContent = L(cfg.title) || (lang === 'ru' ? 'фоном' : 'background');
+
+  // Свои файлы важнее: играют целиком и не тянут чужие кадры.
+  if (tracks.length) {
+    $('card-spotify').hidden = false;
+    $('player').remove();
+    $('spotify-service').textContent = lang === 'ru' ? 'своё' : 'own files';
+    initDeck(tracks);
+    return;
+  }
+
+  const music = parseMusic(cfg.link);
+  if (!music || !music.src) {
     $('card-spotify').remove();
     return;
   }
 
   $('card-spotify').hidden = false;
-  $('spotify-title').textContent = L(cfg.title) || (lang === 'ru' ? 'фоном' : 'background');
+  $('deck').remove();
   $('spotify-service').textContent = music.kind;
 
   // Про отрывки предупреждаем только там, где они действительно есть.
@@ -960,19 +972,123 @@ function renderPlayer() {
   const start = $('player-start');
   start.textContent = lang === 'ru' ? '▶ включить' : '▶ play';
 
-  // Проигрыватель появляется только по клику: чужой кадр тянет свои куки,
+  // Чужой кадр появляется только по клику: он тянет свои куки,
   // а автозапуск браузеры всё равно блокируют.
   start.addEventListener('click', () => {
-    if (music.kind === 'file') {
-      $('player').innerHTML =
-        `<audio class="player-audio" controls preload="none" src="${music.src}"></audio>`;
-      return;
-    }
     $('player').innerHTML =
       `<iframe class="player-frame" src="${music.src}" width="100%" height="${music.height}"
         frameborder="0" scrolling="no" loading="lazy" title="${music.kind}"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
   }, { once: true });
+}
+
+/** Время в виде 3:07. */
+function clock(sec) {
+  if (!Number.isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  return `${m}:${pad(Math.floor(sec % 60))}`;
+}
+
+/** Свой проигрыватель: обычный тег audio плюс своя обвязка. */
+function initDeck(tracks) {
+  $('deck').hidden = false;
+
+  // preload=none: файл не качается, пока гость не нажал play.
+  // Элемент кладём в страницу: так его видят медиа-клавиши и расширения,
+  // и состояние можно посмотреть, если что-то пойдёт не так.
+  const audio = document.createElement('audio');
+  audio.preload = 'none';
+  audio.id = 'deck-audio';
+  audio.hidden = true;
+  $('deck').appendChild(audio);
+
+  let current = -1;
+  let seeking = false;
+
+  const icon = $('deck-icon');
+  const seek = $('deck-seek');
+  const vol = $('deck-vol');
+
+  // Громкость запоминаем: никому не нравится ловить внезапный грохот.
+  const savedVol = Number(localStorage.getItem('volume'));
+  audio.volume = Number.isFinite(savedVol) && savedVol > 0 ? Math.min(savedVol, 1) : 0.7;
+  vol.value = String(Math.round(audio.volume * 100));
+
+  const renderList = () => {
+    $('deck-list').innerHTML = tracks
+      .map((t, i) => `<li><button class="deck-item ${i === current ? 'deck-item--on' : ''}"
+        type="button" data-i="${i}">
+        <span class="deck-item-no">${pad(i + 1)}</span>
+        <span class="deck-item-name">${escapeHTML(L(t.title) || t.src.split('/').pop())}</span>
+        ${t.artist ? `<span class="deck-item-artist">${escapeHTML(L(t.artist))}</span>` : ''}
+      </button></li>`)
+      .join('');
+
+    $('deck-list').querySelectorAll('[data-i]').forEach((btn) => {
+      btn.addEventListener('click', () => load(+btn.dataset.i, true));
+    });
+  };
+
+  // Список из одного трека — это не список.
+  if (tracks.length < 2) $('deck-list').remove();
+
+  function load(i, autoplay) {
+    current = ((i % tracks.length) + tracks.length) % tracks.length;
+    const t = tracks[current];
+    audio.src = t.src;
+    $('deck-title').textContent = L(t.title) || t.src.split('/').pop();
+    $('deck-artist').textContent = L(t.artist) || '';
+    if (tracks.length > 1) renderList();
+    if (autoplay) audio.play().catch(() => { /* браузер не дал, ждём клика */ });
+  }
+
+  load(0, false);
+
+  $('deck-play').addEventListener('click', () => {
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
+  });
+
+  audio.addEventListener('play', () => { icon.textContent = '⏸'; });
+  audio.addEventListener('pause', () => { icon.textContent = '▶'; });
+
+  audio.addEventListener('loadedmetadata', () => {
+    $('deck-dur').textContent = clock(audio.duration);
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    $('deck-cur').textContent = clock(audio.currentTime);
+    if (!seeking && audio.duration) {
+      seek.value = String(Math.round((audio.currentTime / audio.duration) * 1000));
+    }
+  });
+
+  // Один трек играет по кругу, несколько — по очереди.
+  audio.addEventListener('ended', () => {
+    if (tracks.length === 1) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    } else {
+      load(current + 1, true);
+    }
+  });
+
+  audio.addEventListener('error', () => {
+    $('deck-artist').textContent = lang === 'ru' ? 'файл не открылся' : 'could not load the file';
+  });
+
+  seek.addEventListener('input', () => { seeking = true; });
+  seek.addEventListener('change', () => {
+    if (audio.duration) audio.currentTime = (seek.value / 1000) * audio.duration;
+    seeking = false;
+  });
+
+  vol.addEventListener('input', () => {
+    audio.volume = vol.value / 100;
+    try {
+      localStorage.setItem('volume', String(audio.volume));
+    } catch { /* приватный режим */ }
+  });
 }
 
 /* ========================= кнопки и блинки ========================= */

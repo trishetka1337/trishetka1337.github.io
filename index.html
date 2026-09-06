@@ -246,6 +246,33 @@
         <button class="player-start" id="player-start" type="button"></button>
         <p class="card-note" id="player-note"></p>
       </div>
+
+      <!-- Свой проигрыватель. Появляется, когда в конфиге есть свои файлы. -->
+      <div class="deck" id="deck" hidden>
+        <div class="deck-top">
+          <button class="deck-play" id="deck-play" type="button" aria-label="play">
+            <span class="deck-icon" id="deck-icon">▶</span>
+          </button>
+          <div class="deck-meta">
+            <div class="deck-title" id="deck-title">—</div>
+            <div class="deck-artist" id="deck-artist"></div>
+          </div>
+          <div class="deck-vol">
+            <span class="deck-vol-ico" aria-hidden="true">🔊</span>
+            <input class="deck-vol-range" id="deck-vol" type="range" min="0" max="100" value="70"
+                   aria-label="Громкость">
+          </div>
+        </div>
+
+        <div class="deck-line">
+          <span class="deck-time" id="deck-cur">0:00</span>
+          <input class="deck-seek" id="deck-seek" type="range" min="0" max="1000" value="0"
+                 aria-label="Перемотка">
+          <span class="deck-time" id="deck-dur">0:00</span>
+        </div>
+
+        <ul class="deck-list" id="deck-list"></ul>
+      </div>
     </section>
 
     <!-- КНОПКИ И БЛИНКИ -->

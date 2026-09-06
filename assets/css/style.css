@@ -613,7 +613,75 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 }
 .player-start:hover { opacity: .88; }
 .player-frame { display: block; border-radius: 12px; border: 1px solid var(--line); }
-.player-audio { width: 100%; }
+
+/* Свой проигрыватель */
+.deck { display: grid; gap: 12px; }
+.deck-top { display: flex; align-items: center; gap: 14px; }
+
+.deck-play {
+  width: 46px; height: 46px; flex: none; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 15px; color: var(--bg);
+  background: var(--accent); border: 0; border-radius: 50%;
+  transition: opacity .2s, transform .15s;
+}
+.deck-play:hover { opacity: .9; }
+.deck-play:active { transform: scale(.94); }
+
+.deck-meta { flex: 1; min-width: 0; }
+.deck-title {
+  font-size: 14px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.deck-artist { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+.deck-vol { display: flex; align-items: center; gap: 7px; flex: none; }
+.deck-vol-ico { font-size: 11px; opacity: .5; }
+.deck-vol-range { width: 72px; }
+@media (max-width: 560px) { .deck-vol { display: none; } }
+
+.deck-line { display: flex; align-items: center; gap: 10px; }
+.deck-time {
+  font-family: var(--mono); font-size: 10px; color: var(--text-3);
+  font-variant-numeric: tabular-nums; flex: none; min-width: 32px;
+}
+.deck-seek { flex: 1; }
+
+/* Ползунки одинаковые в обоих браузерных движках. */
+.deck-seek, .deck-vol-range {
+  -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px; cursor: pointer;
+  background: var(--line);
+  outline: none;
+}
+.deck-seek::-webkit-slider-thumb, .deck-vol-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); border: 0; cursor: pointer;
+}
+.deck-seek::-moz-range-thumb, .deck-vol-range::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); border: 0; cursor: pointer;
+}
+
+.deck-list {
+  list-style: none; margin: 0; padding: 12px 0 0;
+  border-top: 1px solid var(--line-soft);
+  display: grid; gap: 3px;
+}
+.deck-item {
+  width: 100%; text-align: left; cursor: pointer;
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 10px;
+  font: inherit; color: var(--text-2);
+  background: transparent; border: 0; border-radius: var(--radius-sm);
+  transition: background .15s, color .15s;
+}
+.deck-item:hover { background: var(--panel-2); color: var(--text); }
+.deck-item--on { color: var(--accent); background: var(--panel-2); }
+.deck-item-no { font-family: var(--mono); font-size: 10px; color: var(--text-3); }
+.deck-item-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck-item-artist { font-family: var(--mono); font-size: 10px; color: var(--text-3); }
 
 /* ---------- Кнопки и блинки ---------- */
 .button-mine {
