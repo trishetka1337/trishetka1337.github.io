@@ -133,7 +133,7 @@ export const CONFIG = {
   // Проигрыватель встраивается только после нажатия: он тянет чужие куки,
   // да и браузеры всё равно не дают музыке заиграть самой.
   spotify: {
-    link: '',
+    link: 'https://open.spotify.com/playlist/37i9dQZF1EIcwtrihYBzLc',
     title: { ru: 'фоном', en: 'background noise' },
     note: {
       ru: 'плеер загрузится по клику. без подписки Spotify играют отрывки',
@@ -171,7 +171,7 @@ export const CONFIG = {
   blinkies: [
     { file: 'self-hosted.gif', alt: 'self-hosted' },
     { file: 'dont-sell-your-data.gif', alt: 'dont sell your data' },
-    { file: 'by-people.gif', alt: 'made by people for people' },
+    { file: 'made-for-ppl.gif', alt: 'made for ppl by ppl' },
     { file: 'vpn-or-die.gif', alt: 'vpn or die' },
     { file: 'made-by-hand.gif', alt: 'made by hand' },
   ],

@@ -909,8 +909,8 @@ function renderPlayer() {
   // а автозапуск браузеры всё равно блокируют.
   start.addEventListener('click', () => {
     $('player').innerHTML =
-      `<iframe class="player-frame" src="${src}" width="100%" height="152"
-        frameborder="0" loading="lazy" title="Spotify"
+      `<iframe class="player-frame" src="${src}" width="100%" height="80"
+        frameborder="0" scrolling="no" loading="lazy" title="Spotify"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
   }, { once: true });
 }
