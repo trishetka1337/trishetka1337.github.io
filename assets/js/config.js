@@ -159,8 +159,8 @@ export const CONFIG = {
   // ownerId — твой идентификатор после первого входа, нужен только чтобы
   // показывать кнопку удаления чужих записей.
   wall: {
-    url: '',
-    anonKey: '',
+    url: 'https://uhizglzwybclvakvqzjq.supabase.co',
+    anonKey: 'sb_publishable_UsPmyaDbvVmDWLux2lGWCw_Mxswc9_3',
     ownerId: '',
   },
 
