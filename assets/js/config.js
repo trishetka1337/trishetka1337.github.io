@@ -161,7 +161,7 @@ export const CONFIG = {
   wall: {
     url: 'https://uhizglzwybclvakvqzjq.supabase.co',
     anonKey: 'sb_publishable_UsPmyaDbvVmDWLux2lGWCw_Mxswc9_3',
-    ownerId: '',
+    ownerId: 'fe3f9122-8148-4eb5-bf4d-c4130d760bab',
   },
 
   // Кнопки 88x31 чужих сайтов. Своя кнопка лежит в assets/img/button.png.

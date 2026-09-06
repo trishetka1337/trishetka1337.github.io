@@ -73,16 +73,13 @@ create trigger wall_rate_limit_trg
   for each row execute function public.wall_rate_limit();
 
 -- ---------------------------------------------------------------------
--- Модерация.
+-- Модерация: владелец сайта может убирать и прятать чужие записи.
 --
--- Подставь свой идентификатор вместо ВСТАВЬ-СВОЙ-UUID и выполни этот кусок
--- отдельно. Свой идентификатор видно в Authentication -> Users после
--- первого входа на сайт, либо на самой странице стены в консоли браузера.
---
--- drop policy if exists "wall owner all" on public.wall;
--- create policy "wall owner all" on public.wall
---   for all to authenticated
---   using (auth.uid() = 'ВСТАВЬ-СВОЙ-UUID')
---   with check (auth.uid() = 'ВСТАВЬ-СВОЙ-UUID');
---
--- После этого ты сможешь удалять и прятать чужие записи прямо со страницы.
+-- Идентификатор берётся после первого входа. Это не секрет: он и так
+-- стоит в каждой записи стены рядом с ником.
+
+drop policy if exists "wall owner all" on public.wall;
+create policy "wall owner all" on public.wall
+  for all to authenticated
+  using (auth.uid() = 'fe3f9122-8148-4eb5-bf4d-c4130d760bab'::uuid)
+  with check (auth.uid() = 'fe3f9122-8148-4eb5-bf4d-c4130d760bab'::uuid);
