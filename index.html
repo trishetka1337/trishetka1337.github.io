@@ -33,6 +33,8 @@
     <a id="nav-feed" href="feed.xml">rss</a>
   </nav>
 
+  <span class="online" id="online" hidden></span>
+
   <div class="topclock" id="topclock">
     <span class="topclock-label" id="topclock-label">—</span>
     <span class="topclock-time" id="author-time">--:--</span>
@@ -316,5 +318,6 @@
 <!-- Расчёт орбит SGP4. Если не загрузится, блок спутников просто не покажется. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/5.0.0/satellite.min.js"></script>
 <script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/online.js"></script>
 </body>
 </html>

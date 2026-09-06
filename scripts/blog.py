@@ -189,6 +189,7 @@ def head(title, description, lang, rel, alt_href):
     <a href="{rel}wall.html">{s['wall']}</a>
     <a href="{rel}{page_name('feed', '', lang)}">rss</a>
   </nav>
+  <span class="online" id="online" hidden></span>
   <div class="langs">{lang_buttons}</div>
   <button class="theme-switch" id="theme-toggle" type="button" role="switch"
           aria-checked="false" aria-label="theme">
@@ -200,7 +201,7 @@ def head(title, description, lang, rel, alt_href):
 """
 
 
-FOOT = """
+FOOT_TPL = """
 <footer class="footer">
   <div class="footer-meta"><span>villcreat</span></div>
 </footer>
@@ -230,9 +231,9 @@ FOOT = """
   });
 })();
 </script>
+<script type="module" src="{rel}assets/js/online.js"></script>
 </body>
-</html>
-"""
+</html>"""
 
 
 def tags_html(tags):
@@ -265,7 +266,7 @@ def build_post(post, has_translation):
   <a class="back back--bottom" href="../{page_name('index', '', lang)}">{s['all_posts']}</a>
 </main>
 """
-    page += FOOT
+    page += FOOT_TPL.replace("{rel}", "../")
     (OUT_DIR / page_name("post", post["slug"], lang)).write_text(page, encoding="utf-8")
 
 
@@ -299,7 +300,7 @@ def build_index(posts, lang):
   {listing}
 </main>
 """
-    page += FOOT
+    page += FOOT_TPL.replace("{rel}", "")
     (ROOT / page_name("index", "", lang)).write_text(page, encoding="utf-8")
 
 
