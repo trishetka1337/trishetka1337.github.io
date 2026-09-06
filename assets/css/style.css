@@ -613,6 +613,7 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 }
 .player-start:hover { opacity: .88; }
 .player-frame { display: block; border-radius: 12px; border: 1px solid var(--line); }
+.player-audio { width: 100%; }
 
 /* ---------- Кнопки и блинки ---------- */
 .button-mine {

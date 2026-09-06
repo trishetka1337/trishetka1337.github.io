@@ -881,36 +881,96 @@ function renderStack() {
 /* ========================== фоном музыка ========================== */
 
 /**
- * Ссылка Spotify в адрес встраиваемого проигрывателя.
- * Годятся плейлист, альбом, трек и подборка artist.
+ * Разбирает ссылку на музыку и возвращает, чем её проигрывать.
+ *
+ * Spotify во встроенном проигрывателе даёт только отрывки: полный трек
+ * там слышат лишь те, у кого есть подписка. YouTube, SoundCloud и Bandcamp
+ * играют целиком у всех, поэтому для фоновой музыки они удобнее.
  */
-function spotifyEmbed(link) {
-  const m = String(link).match(/(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/);
-  if (!m) return null;
-  return `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`;
+function parseMusic(link) {
+  const url = String(link || '').trim();
+  if (!url) return null;
+
+  // Свой файл, лежащий рядом с сайтом.
+  if (/\.(mp3|ogg|opus|m4a|wav|flac)$/i.test(url)) {
+    return { kind: 'file', src: url, full: true, height: 54 };
+  }
+
+  let m = url.match(/spotify\.com\/(?:intl-\w+\/)?(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/);
+  if (m) {
+    return {
+      kind: 'spotify', full: false, height: 80,
+      src: `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`,
+    };
+  }
+
+  // Плейлист ютуба.
+  m = url.match(/[?&]list=([A-Za-z0-9_-]+)/);
+  if (m && /youtu/.test(url)) {
+    return {
+      kind: 'youtube', full: true, height: 152,
+      src: `https://www.youtube-nocookie.com/embed/videoseries?list=${m[1]}`,
+    };
+  }
+
+  m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if (m) {
+    return {
+      kind: 'youtube', full: true, height: 152,
+      src: `https://www.youtube-nocookie.com/embed/${m[1]}`,
+    };
+  }
+
+  if (/soundcloud\.com\//.test(url)) {
+    return {
+      kind: 'soundcloud', full: true, height: 120,
+      src: 'https://w.soundcloud.com/player/?color=%2300ae4c&inverse=true&auto_play=false' +
+           `&show_user=true&url=${encodeURIComponent(url)}`,
+    };
+  }
+
+  if (/bandcamp\.com\//.test(url)) {
+    // У Bandcamp во встраиваемом коде свой номер альбома, ссылка на страницу не подходит.
+    return { kind: 'bandcamp', full: true, height: 120, src: null, needsCode: true };
+  }
+
+  return null;
 }
 
 function renderPlayer() {
-  const cfg = CONFIG.spotify || {};
-  const src = cfg.link ? spotifyEmbed(cfg.link) : null;
-  if (!src) {
+  const cfg = CONFIG.player || CONFIG.spotify || {};
+  const music = parseMusic(cfg.link);
+
+  if (!music || (!music.src && !cfg.embedCode)) {
     $('card-spotify').remove();
     return;
   }
 
   $('card-spotify').hidden = false;
   $('spotify-title').textContent = L(cfg.title) || (lang === 'ru' ? 'фоном' : 'background');
-  $('player-note').textContent = L(cfg.note);
+  $('spotify-service').textContent = music.kind;
+
+  // Про отрывки предупреждаем только там, где они действительно есть.
+  $('player-note').textContent = music.full
+    ? (lang === 'ru' ? 'проигрыватель загрузится по клику' : 'the player loads on click')
+    : (lang === 'ru'
+      ? 'проигрыватель загрузится по клику. Spotify даёт гостям только отрывки'
+      : 'the player loads on click. Spotify plays previews unless the listener has Premium');
 
   const start = $('player-start');
   start.textContent = lang === 'ru' ? '▶ включить' : '▶ play';
 
-  // Проигрыватель появляется только по клику: iframe тянет чужие куки,
+  // Проигрыватель появляется только по клику: чужой кадр тянет свои куки,
   // а автозапуск браузеры всё равно блокируют.
   start.addEventListener('click', () => {
+    if (music.kind === 'file') {
+      $('player').innerHTML =
+        `<audio class="player-audio" controls preload="none" src="${music.src}"></audio>`;
+      return;
+    }
     $('player').innerHTML =
-      `<iframe class="player-frame" src="${src}" width="100%" height="80"
-        frameborder="0" scrolling="no" loading="lazy" title="Spotify"
+      `<iframe class="player-frame" src="${music.src}" width="100%" height="${music.height}"
+        frameborder="0" scrolling="no" loading="lazy" title="${music.kind}"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
   }, { once: true });
 }
