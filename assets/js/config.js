@@ -148,7 +148,7 @@ export const CONFIG = {
   },
 
   // Адрес сайта. Нужен для кода кнопки, который копируют другие.
-  siteUrl: 'https://villcreat.github.io',
+  siteUrl: 'https://trishetka1337.github.io',
 
   // СТЕНА. Пока поля пустые, страница честно говорит, что не настроена.
   //

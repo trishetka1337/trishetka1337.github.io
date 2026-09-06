@@ -31,7 +31,7 @@ POSTS_DIR = ROOT / "posts"
 OUT_DIR = ROOT / "blog"
 
 # Адрес нужен только для ленты: в RSS обязаны быть полные ссылки.
-SITE_URL = "https://villcreat.github.io"
+SITE_URL = "https://trishetka1337.github.io"
 
 LANGS = ("ru", "en")
 
