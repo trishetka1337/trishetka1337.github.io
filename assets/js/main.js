@@ -1221,13 +1221,18 @@ function initLinks() {
 
   initCopy();
 
-  const ring = CONFIG.webring;
-  $('webring').innerHTML =
-    '<span>←</span>' +
-    `<a href="${ring[0]?.href || '#'}" rel="noopener">${escapeHTML(ring[0]?.label || '—')}</a>` +
-    `<span class="ring-self">${escapeHTML(CONFIG.nick)}</span>` +
-    `<a href="${ring[1]?.href || '#'}" rel="noopener">${escapeHTML(ring[1]?.label || '—')}</a>` +
-    '<span>→</span>';
+  // Кольцо сайтов: пока в конфиге пусто, в подвале ничего нет.
+  const ring = CONFIG.webring || [];
+  if (ring.length < 2) {
+    $('webring').remove();
+  } else {
+    $('webring').innerHTML =
+      '<span>←</span>' +
+      `<a href="${ring[0].href}" rel="noopener">${escapeHTML(ring[0].label)}</a>` +
+      `<span class="ring-self">${escapeHTML(CONFIG.nick)}</span>` +
+      `<a href="${ring[1].href}" rel="noopener">${escapeHTML(ring[1].label)}</a>` +
+      '<span>→</span>';
+  }
 
   $('year').textContent = new Date().getFullYear();
   $('hero-sub').textContent = L(CONFIG.tagline);

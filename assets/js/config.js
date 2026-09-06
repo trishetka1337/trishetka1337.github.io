@@ -122,10 +122,10 @@ export const CONFIG = {
     },
   ],
 
-  // Кольцо личных сайтов. Классика IndieWeb.
+  // Кольцо личных сайтов, классика IndieWeb: слева и справа соседи.
+  // Пока в списке меньше двух сайтов, в подвале ничего не показывается.
   webring: [
-    { label: 'keetsta', href: 'https://keetsta.me' },
-    { label: 'nichind', href: 'https://nichind.dev' },
+    // { label: 'сосед', href: 'https://пример.ру' },
   ],
 
   // ФОНОВАЯ МУЗЫКА.
