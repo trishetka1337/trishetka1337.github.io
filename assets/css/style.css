@@ -586,6 +586,43 @@ a.pin:hover { border-color: var(--accent); transform: translateY(-2px); }
 .skill-bars i.on:nth-child(1) { opacity: .55; }
 .skill-bars i.on:nth-child(2) { opacity: .78; }
 
+/* ---------- Кнопки и блинки ---------- */
+.button-mine {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  padding-bottom: 16px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.button-code { flex: 1 1 260px; min-width: 0; }
+
+/* Пиксельная графика не должна размываться при масштабировании. */
+.btn88, .blinkie {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.btn88 { border: 1px solid var(--line); }
+.btn88-link:hover .btn88 { border-color: var(--accent); }
+
+.code-box {
+  display: block; width: 100%; margin-top: 8px; padding: 9px 11px;
+  text-align: left; cursor: pointer;
+  font-family: var(--mono); font-size: 10px; line-height: 1.5; color: var(--text-3);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+  overflow-x: auto; white-space: nowrap;
+  transition: border-color .2s, color .2s;
+}
+.code-box:hover { border-color: var(--accent); color: var(--text-2); }
+.code-box[data-copied] { border-color: var(--ok); color: var(--ok); }
+
+.buttons-wall { display: flex; flex-wrap: wrap; gap: 8px; }
+.buttons-wall:not(:empty) { margin-bottom: 16px; }
+
+.blinkies { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.blinkie { border: 1px solid var(--line-soft); }
+
+#blinkies-credit a { color: var(--accent); }
+
 /* ---------- Связь ---------- */
 .links {
   list-style: none; margin: 0; padding: 0;

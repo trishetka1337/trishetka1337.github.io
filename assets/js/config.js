@@ -128,5 +128,25 @@ export const CONFIG = {
     { label: 'nichind', href: 'https://nichind.dev' },
   ],
 
+  // Адрес сайта. Нужен для кода кнопки, который копируют другие.
+  siteUrl: 'https://villcreat.github.io',
+
+  // Кнопки 88x31 чужих сайтов. Своя кнопка лежит в assets/img/button.svg.
+  // src можно указывать чужой, но лучше сохранить картинку к себе
+  // в assets/img: чужие ссылки со временем отваливаются.
+  buttons: [
+    // { alt: 'keetsta', href: 'https://keetsta.me', src: 'assets/img/keetsta.gif' },
+  ],
+
+  // Блинки: мелкие мигающие таблички из веба нулевых, 150x20.
+  // Сделаны на blinkies.cafe и лежат у нас: хотлинкать чужой сервер нельзя,
+  // да и ссылки со временем отваливаются. Новые добавляются туда же.
+  blinkies: [
+    { file: 'self-hosted.gif', alt: 'self-hosted' },
+    { file: 'no-ai-slop.gif', alt: 'no ai slop' },
+    { file: 'vpn-or-die.gif', alt: 'vpn or die' },
+    { file: 'made-by-hand.gif', alt: 'made by hand' },
+  ],
+
   memberSince: 'JUN 2025',
 };

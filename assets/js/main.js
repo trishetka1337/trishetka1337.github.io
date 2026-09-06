@@ -877,6 +877,50 @@ function renderStack() {
     .join('');
 }
 
+/* ========================= кнопки и блинки ========================= */
+
+function renderButtons() {
+  const card = $('card-buttons');
+  const mine = `<a href="${CONFIG.siteUrl}"><img src="${CONFIG.siteUrl}/assets/img/button.svg" width="88" height="31" alt="villcreat"></a>`;
+
+  $('buttons-title').textContent = lang === 'ru' ? 'кнопки' : 'buttons';
+  $('buttons-hint').textContent = lang === 'ru'
+    ? 'поставьте меня у себя, код копируется по клику'
+    : 'put me on your site, click the code to copy';
+
+  const code = $('button-code');
+  code.textContent = mine;
+  code.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(mine);
+      code.dataset.copied = '1';
+      setTimeout(() => { delete code.dataset.copied; }, 1600);
+    } catch { /* буфер недоступен, код и так виден целиком */ }
+  });
+
+  // Чужие кнопки. Пока их нет, блока просто не будет.
+  const buttons = CONFIG.buttons || [];
+  $('buttons-wall').innerHTML = buttons
+    .map((b) => `<a class="btn88-link" href="${b.href}" target="_blank" rel="noopener">
+      <img class="btn88" src="${b.src}" width="88" height="31" alt="${escapeHTML(b.alt)}" loading="lazy">
+    </a>`)
+    .join('');
+
+  const blinkies = CONFIG.blinkies || [];
+  $('blinkies').innerHTML = blinkies
+    .map((b) => `<img class="blinkie" src="assets/img/blinkies/${b.file}"
+      width="150" height="20" alt="${escapeHTML(b.alt)}" loading="lazy">`)
+    .join('');
+
+  if (blinkies.length) {
+    $('blinkies-credit').innerHTML = lang === 'ru'
+      ? 'блинки сделаны на <a href="https://blinkies.cafe" target="_blank" rel="noopener">blinkies.cafe</a>, шаблоны CC BY'
+      : 'blinkies made at <a href="https://blinkies.cafe" target="_blank" rel="noopener">blinkies.cafe</a>, templates CC BY';
+  }
+
+  if (!buttons.length && !blinkies.length) card.remove();
+}
+
 /* ========================== инфраструктура ========================== */
 
 async function initInfra() {
@@ -1009,6 +1053,7 @@ initSun();
 renderPinned();
 renderDoing();
 renderStack();
+renderButtons();
 initLinks();
 
 $('city-name').textContent = cityChosen ? city.name : T.city_detecting;
