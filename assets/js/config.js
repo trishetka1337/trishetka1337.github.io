@@ -170,7 +170,7 @@ export const CONFIG = {
   // да и ссылки со временем отваливаются. Новые добавляются туда же.
   blinkies: [
     { file: 'self-hosted.gif', alt: 'self-hosted' },
-    { file: 'ne-prodavaysya.gif', alt: 'не продавайся' },
+    { file: 'dont-sell-your-data.gif', alt: 'dont sell your data' },
     { file: 'by-people.gif', alt: 'made by people for people' },
     { file: 'vpn-or-die.gif', alt: 'vpn or die' },
     { file: 'made-by-hand.gif', alt: 'made by hand' },
